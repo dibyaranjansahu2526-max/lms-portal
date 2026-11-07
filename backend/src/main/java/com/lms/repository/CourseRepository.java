@@ -26,6 +26,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @EntityGraph(attributePaths = "teacher")
     List<Course> findByTeacherIdOrderByCreatedAtDesc(Long teacherId);
 
+    Optional<Course> findByTitleIgnoreCase(String title);
+
     @EntityGraph(attributePaths = "teacher")
     Optional<Course> findWithTeacherById(Long id);
 

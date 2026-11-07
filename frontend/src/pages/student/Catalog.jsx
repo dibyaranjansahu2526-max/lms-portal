@@ -8,6 +8,19 @@ import { SkeletonCard } from '../../components/Loading'
 import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../context/AuthContext'
 
+const ALL_CATEGORIES = [
+  'Programming',
+  'Web Development',
+  'Computer Science',
+  'Data Science',
+  'Artificial Intelligence',
+  'Database',
+  'Cloud & DevOps',
+  'Mobile Development',
+  'Cybersecurity',
+  'Soft Skills & Career',
+]
+
 export default function Catalog() {
   const { user } = useAuth()
   const [courses, setCourses] = useState([])
@@ -23,8 +36,8 @@ export default function Catalog() {
   useEffect(() => {
     api
       .get('/courses/categories')
-      .then(({ data }) => setCategories(data))
-      .catch(() => setCategories([]))
+      .then(({ data }) => setCategories([...new Set([...data, ...ALL_CATEGORIES])].sort()))
+      .catch(() => setCategories(ALL_CATEGORIES))
 
     api
       .get('/student/courses')

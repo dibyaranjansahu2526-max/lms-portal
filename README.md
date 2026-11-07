@@ -133,7 +133,7 @@ Other supported environment variables:
 | `JWT_EXPIRATION_MS` | `86400000` | Token lifetime (24 hours) |
 | `CORS_ALLOWED_ORIGIN` | `http://localhost:5173` | Permitted frontend origin |
 
-Tables are created/updated automatically by Hibernate (`spring.jpa.hibernate.ddl-auto=update`). Seed data is inserted on first startup when the database is empty.
+Tables are created/updated automatically by Hibernate (`spring.jpa.hibernate.ddl-auto=update`). Seed data is ensured on every startup without deleting existing records. Base users, enrollments and progress are reused when already present, and each additional course is inserted by title only if it is missing.
 
 ## 2. Run the backend
 
@@ -216,7 +216,10 @@ The login screen also has **Student / Teacher / Admin** demo buttons that fill i
 - **Java Spring Boot Masterclass** — Priya Sharma, 3 lessons, 1 quiz (student1 enrolled with 1 lesson completed)
 - **Modern React & Tailwind CSS** — Marcus Chen, 3 lessons, 1 quiz (student2 enrolled)
 - **Data Structures Essentials** — Priya Sharma, 3 lessons, 1 quiz
+- **20 additional courses** split across all 10 categories (2 per category), each with 4 lessons, 1 quiz and 5 questions, assigned across the two teachers
+- Additional courses include Python, JavaScript, MERN, responsive design, operating systems, networking, Pandas, analytics SQL, machine learning, generative AI, MySQL, database design, AWS, Docker/Kubernetes, Android, Flutter, cybersecurity, ethical hacking, workplace communication and interview preparation
 - Sample enrollments and progress so **My Courses** and the admin/teacher dashboards are populated immediately
+- Existing records are preserved and duplicate titles are skipped on restart
 
 ## Main API endpoints
 
@@ -296,7 +299,7 @@ The production bundle is written to `frontend/dist`. Serve it with any static we
 
 ## Troubleshooting
 
-- **`Access denied for user 'root'@'localhost'`** — set `DB_PASSWORD` (or edit `application.properties`) to your real MySQL password.
+- **`Access denied for user 'root'@'localhost'`** — set `DB_PASSWORD` to your real MySQL password before starting the backend.
 - **`Unknown database 'lms_db'`** — create the database or confirm the MySQL user can create databases.
 - **CORS error in the browser** — make sure the frontend runs on `http://localhost:5173`, or set `CORS_ALLOWED_ORIGIN` to the URL you use.
 - **Blank page after login / 401 responses** — tokens expire after 24 hours; sign out and sign in again.
@@ -308,6 +311,6 @@ The production bundle is written to `frontend/dist`. Serve it with any static we
 ## Security notes
 
 - Change `JWT_SECRET` and the seeded account passwords before deploying.
-- The configured MySQL password is for this local machine; use environment variables and a dedicated database user in production.
+- No database password is committed to the project; provide it through `DB_PASSWORD` and use a dedicated database user in production.
 - Passwords are stored as BCrypt hashes.
 - Quiz correct answers are validated only on the server.

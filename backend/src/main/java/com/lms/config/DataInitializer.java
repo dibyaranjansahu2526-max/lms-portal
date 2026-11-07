@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Supplier;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
@@ -52,27 +53,63 @@ public class DataInitializer implements CommandLineRunner {
         ensureUser("Sofia Ramirez", "student2@lms.com", "student123", Role.STUDENT);
         ensureUser("Daniel Okafor", "student3@lms.com", "student123", Role.STUDENT);
 
-        if (courseRepository.count() > 0) {
-            return;
-        }
-
         User priya = userRepository.findByEmailIgnoreCase("teacher1@lms.com").orElseThrow();
         User marcus = userRepository.findByEmailIgnoreCase("teacher2@lms.com").orElseThrow();
         User aarav = userRepository.findByEmailIgnoreCase("student1@lms.com").orElseThrow();
         User sofia = userRepository.findByEmailIgnoreCase("student2@lms.com").orElseThrow();
 
-        Course javaCourse = buildJavaCourse(priya);
-        Course reactCourse = buildReactCourse(marcus);
-        Course dsaCourse = buildDsaCourse(priya);
+        Course javaCourse = ensureCourse("Java Spring Boot Masterclass", () -> buildJavaCourse(priya));
+        Course reactCourse = ensureCourse("Modern React & Tailwind CSS", () -> buildReactCourse(marcus));
+        ensureCourse("Data Structures Essentials", () -> buildDsaCourse(priya));
 
-        javaCourse = courseRepository.save(javaCourse);
-        reactCourse = courseRepository.save(reactCourse);
-        courseRepository.save(dsaCourse);
+        ensureEnrollment(aarav, javaCourse);
+        ensureEnrollment(sofia, reactCourse);
 
-        Enrollment aaravEnrollment = enroll(aarav, javaCourse);
-        markFirstLessonComplete(aarav, javaCourse);
-        enroll(sofia, reactCourse);
-        markFirstLessonComplete(sofia, reactCourse);
+        int teacherIndex = 0;
+        for (CourseSeedCatalog.CourseSeed seed : CourseSeedCatalog.courses()) {
+            User teacher = teacherIndex % 2 == 0 ? priya : marcus;
+            seedAdditionalCourse(seed, teacher);
+            teacherIndex++;
+        }
+    }
+
+    private Course ensureCourse(String title, Supplier<Course> factory) {
+        return courseRepository.findByTitleIgnoreCase(title)
+                .orElseGet(() -> courseRepository.save(factory.get()));
+    }
+
+    private void ensureEnrollment(User student, Course course) {
+        if (!enrollmentRepository.existsByStudentIdAndCourseId(student.getId(), course.getId())) {
+            enroll(student, course);
+        }
+        if (course.getLessons().isEmpty()) {
+            return;
+        }
+        Lesson firstLesson = course.getLessons().get(0);
+        if (lessonProgressRepository.findByStudentIdAndLessonId(student.getId(), firstLesson.getId()).isEmpty()) {
+            markFirstLessonComplete(student, course);
+        }
+    }
+
+    private void seedAdditionalCourse(CourseSeedCatalog.CourseSeed seed, User teacher) {
+        if (courseRepository.findByTitleIgnoreCase(seed.title()).isPresent()) {
+            return;
+        }
+
+        Course course = baseCourse(seed.title(), seed.description(), seed.category(), seed.imageUrl(), teacher);
+        course.setCreatedAt(LocalDateTime.now().minusDays(5));
+
+        int lessonOrder = 1;
+        for (var lessonSeed : seed.lessons()) {
+            addLesson(course, lessonSeed.title(), lessonSeed.content(), lessonSeed.videoUrl(), null, lessonOrder++);
+        }
+
+        List<QuizQuestion> quizQuestions = seed.questions().stream()
+                .map(question -> new QuizQuestion(question.text(), question.options(), question.correctIndex()))
+                .toList();
+        addQuiz(course, seed.quizTitle(), seed.quizDescription(), 60, quizQuestions);
+
+        courseRepository.save(course);
     }
 
     private User ensureUser(String name, String email, String password, Role role) {
