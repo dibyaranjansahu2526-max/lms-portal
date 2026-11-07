@@ -1,0 +1,39 @@
+package com.lms.controller;
+
+import com.lms.dto.CourseDto;
+import com.lms.service.CourseService;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/courses")
+public class CourseController {
+
+    private final CourseService courseService;
+
+    public CourseController(CourseService courseService) {
+        this.courseService = courseService;
+    }
+
+    @GetMapping
+    public List<CourseDto> browse(@RequestParam(required = false) String search,
+                                  @RequestParam(required = false) String category) {
+        return courseService.browse(search, category);
+    }
+
+    @GetMapping("/categories")
+    public List<String> categories() {
+        return courseService.categories();
+    }
+
+    @GetMapping("/{courseId}")
+    public CourseDto getCourse(@PathVariable Long courseId, Authentication authentication) {
+        return courseService.getVisible(courseId, authentication);
+    }
+}
