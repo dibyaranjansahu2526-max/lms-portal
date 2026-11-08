@@ -7,9 +7,12 @@ import { useAuth } from './context/AuthContext'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import Catalog from './pages/student/Catalog'
+import CourseDetail from './pages/student/CourseDetail'
 import LearningPage from './pages/student/LearningPage'
 import MyCourses from './pages/student/MyCourses'
 import QuizPage from './pages/student/QuizPage'
+import StudentDashboard from './pages/student/StudentDashboard'
+import Wishlist from './pages/student/Wishlist'
 import AdminCourses from './pages/admin/AdminCourses'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
@@ -53,6 +56,14 @@ export default function App() {
         }
       >
         <Route
+          path="/student/dashboard"
+          element={
+            <ProtectedRoute roles={['STUDENT']}>
+              <StudentDashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/student/catalog"
           element={
             <ProtectedRoute roles={['STUDENT']}>
@@ -65,6 +76,22 @@ export default function App() {
           element={
             <ProtectedRoute roles={['STUDENT']}>
               <MyCourses />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/courses/:courseId"
+          element={
+            <ProtectedRoute roles={['STUDENT']}>
+              <CourseDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/wishlist"
+          element={
+            <ProtectedRoute roles={['STUDENT']}>
+              <Wishlist />
             </ProtectedRoute>
           }
         />

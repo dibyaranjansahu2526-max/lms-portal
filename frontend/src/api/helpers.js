@@ -1,7 +1,7 @@
 export const ROLE_HOME = {
   ADMIN: '/admin',
   TEACHER: '/teacher/courses',
-  STUDENT: '/student/catalog',
+  STUDENT: '/student/dashboard',
 }
 
 export function homeForRole(role) {

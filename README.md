@@ -26,11 +26,17 @@ A complete Learning Management System with a Spring Boot REST API and a React fr
 - View enrolled students, their progress, and completion status
 
 ### Student
-- Browse published courses and filter by search text or category
+- Land on a personalized dashboard after login with enrolled, completed and certificate counts
+- Continue in-progress courses from dashboard cards with progress bars and quick **Continue** buttons
+- Get recommendations from enrolled categories, with a popular-course fallback
+- Browse published courses, filter by search text or category, and sort by newest, highest rated or most popular
+- Save courses to a wishlist with the heart button on any course card
 - Enroll in courses and view them under **My Courses**
 - Read lessons, watch embedded YouTube videos, open lesson materials
 - Mark lessons complete and track progress
 - Take quizzes scored on the server (correct answers are never sent to the browser)
+- View course details, average ratings, review counts and student reviews
+- Enrolled students can publish and edit one rating/review per course
 - Download a PDF certificate after completing all lessons and passing all quizzes
 
 ### Security
@@ -71,7 +77,7 @@ lmsportal/
             ├── auth/          # Login, registration
             ├── admin/         # Dashboard, users, courses
             ├── teacher/       # Courses, lessons, quizzes, students
-            └── student/       # Catalog, my courses, learning, quiz
+            └── student/       # Dashboard, catalog, wishlist, course details, learning, quiz
 ```
 
 ## Prerequisites
@@ -94,9 +100,9 @@ CREATE DATABASE lms_db
 The default configuration in `backend/src/main/resources/application.properties` is:
 
 ```
-spring.datasource.url=jdbc:mysql://localhost:3306/lms_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
-spring.datasource.username=root
-spring.datasource.password=your_mysql_password
+spring.datasource.url=${DB_URL:jdbc:mysql://localhost:3306/lms_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8}
+spring.datasource.username=${DB_USERNAME:root}
+spring.datasource.password=${DB_PASSWORD:}
 ```
 
 The project does not ship with a database password. You must set `DB_PASSWORD` to your MySQL password before starting the backend. For the local database created above, this is the password for your `root` user.
@@ -219,7 +225,8 @@ The login screen also has **Student / Teacher / Admin** demo buttons that fill i
 - **20 additional courses** split across all 10 categories (2 per category), each with 4 lessons, 1 quiz and 5 questions, assigned across the two teachers
 - Additional courses include Python, JavaScript, MERN, responsive design, operating systems, networking, Pandas, analytics SQL, machine learning, generative AI, MySQL, database design, AWS, Docker/Kubernetes, Android, Flutter, cybersecurity, ethical hacking, workplace communication and interview preparation
 - Sample enrollments and progress so **My Courses** and the admin/teacher dashboards are populated immediately
-- Existing records are preserved and duplicate titles are skipped on restart
+- Three idempotent sample reviews: Aarav on Java Spring Boot Masterclass (5), Sofia on Modern React & Tailwind CSS (5), and Aarav on Data Structures Essentials (4)
+- Existing records are preserved, and duplicate titles, enrollments and reviews are skipped on restart
 
 ## Main API endpoints
 
@@ -230,11 +237,15 @@ All endpoints are prefixed with `/api`. Protected endpoints require `Authorizati
 | POST | `/auth/register` | Public | Register a student |
 | POST | `/auth/login` | Public | Login and receive a JWT |
 | GET | `/auth/me` | Authenticated | Current user profile |
-| GET | `/courses?search=&category=` | Authenticated | Browse published courses |
+| GET | `/courses?search=&category=&sort=` | Authenticated | Browse published courses; `sort` is `newest`, `rating` or `popular` |
 | GET | `/courses/categories` | Authenticated | List categories |
-| GET | `/courses/{id}` | Authenticated | Course details |
+| GET | `/courses/{id}` | Authenticated | Course details with average rating and review count |
+| GET | `/courses/{id}/reviews` | Authenticated | Review summary, review list and the current student's review |
 | POST | `/courses/{id}/enroll` | Student | Enroll in a course |
-| GET | `/student/courses` | Student | My enrolled courses |
+| GET | `/student/courses` | Student | My enrolled courses with progress |
+| GET | `/student/wishlist` | Student | List saved courses |
+| POST/DELETE | `/student/wishlist/{courseId}` | Student | Save/remove a course from the wishlist |
+| POST/PUT | `/student/courses/{id}/reviews` | Student | Create or edit the enrolled student's review |
 | GET | `/student/courses/{id}/learning` | Student | Lessons, quizzes and progress |
 | POST | `/student/lessons/{id}/complete` | Student | Mark a lesson complete |
 | GET | `/student/quizzes/{id}` | Student | Quiz questions (without answers) |

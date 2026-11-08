@@ -5,6 +5,7 @@ import {
   ChevronDown,
   Compass,
   GraduationCap,
+  Heart,
   LayoutDashboard,
   LibraryBig,
   LogOut,
@@ -17,8 +18,10 @@ import { formatRole, initials } from '../api/helpers'
 
 const NAV_LINKS = {
   STUDENT: [
+    { to: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/student/catalog', label: 'Catalog', icon: Compass },
     { to: '/student/courses', label: 'My Courses', icon: BookOpen },
+    { to: '/student/wishlist', label: 'Wishlist', icon: Heart },
   ],
   TEACHER: [
     { to: '/teacher/courses', label: 'My Courses', icon: LibraryBig },

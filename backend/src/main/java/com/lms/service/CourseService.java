@@ -12,10 +12,13 @@ import com.lms.repository.LessonProgressRepository;
 import com.lms.repository.LessonRepository;
 import com.lms.repository.QuizAttemptRepository;
 import com.lms.repository.QuizRepository;
+import com.lms.repository.ReviewRepository;
+import com.lms.repository.WishlistRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -27,6 +30,8 @@ public class CourseService {
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final QuizAttemptRepository quizAttemptRepository;
+    private final ReviewRepository reviewRepository;
+    private final WishlistRepository wishlistRepository;
     private final CurrentUserService currentUserService;
 
     public CourseService(CourseRepository courseRepository,
@@ -35,6 +40,8 @@ public class CourseService {
                          EnrollmentRepository enrollmentRepository,
                          LessonProgressRepository lessonProgressRepository,
                          QuizAttemptRepository quizAttemptRepository,
+                         ReviewRepository reviewRepository,
+                         WishlistRepository wishlistRepository,
                          CurrentUserService currentUserService) {
         this.courseRepository = courseRepository;
         this.lessonRepository = lessonRepository;
@@ -42,17 +49,36 @@ public class CourseService {
         this.enrollmentRepository = enrollmentRepository;
         this.lessonProgressRepository = lessonProgressRepository;
         this.quizAttemptRepository = quizAttemptRepository;
+        this.reviewRepository = reviewRepository;
+        this.wishlistRepository = wishlistRepository;
         this.currentUserService = currentUserService;
     }
 
     @Transactional(readOnly = true)
-    public List<CourseDto> browse(String search, String category) {
+    public List<CourseDto> browse(String search, String category, String sort) {
         String searchTerm = blankToNull(search);
         String categoryTerm = blankToNull(category);
+        String sortKey = sort == null ? "newest" : sort.trim().toLowerCase();
         return courseRepository.searchPublished(searchTerm, categoryTerm)
                 .stream()
                 .map(this::toDto)
+                .sorted(comparatorFor(sortKey))
                 .toList();
+    }
+
+    private Comparator<CourseDto> comparatorFor(String sortKey) {
+        return switch (sortKey) {
+            case "rating" -> Comparator.comparingDouble(CourseDto::averageRating).reversed()
+                    .thenComparing(Comparator.comparingLong(CourseDto::reviewCount).reversed())
+                    .thenComparing(CourseDto::title, String.CASE_INSENSITIVE_ORDER);
+            case "popular" -> Comparator.comparingLong(CourseDto::enrollmentCount).reversed()
+                    .thenComparing(Comparator.comparingDouble(CourseDto::averageRating).reversed())
+                    .thenComparing(CourseDto::title, String.CASE_INSENSITIVE_ORDER);
+            default -> Comparator.comparing(
+                    CourseDto::createdAt,
+                    Comparator.nullsLast(Comparator.reverseOrder())
+            );
+        };
     }
 
     @Transactional(readOnly = true)
@@ -126,6 +152,7 @@ public class CourseService {
     }
 
     public CourseDto toDto(Course course) {
+        Double averageRating = reviewRepository.averageRating(course.getId());
         return new CourseDto(
                 course.getId(),
                 course.getTitle(),
@@ -138,7 +165,9 @@ public class CourseService {
                 lessonRepository.countByCourseId(course.getId()),
                 quizRepository.countByCourseId(course.getId()),
                 enrollmentRepository.countByCourseId(course.getId()),
-                course.getCreatedAt()
+                course.getCreatedAt(),
+                averageRating == null ? 0.0 : Math.round(averageRating * 10.0) / 10.0,
+                reviewRepository.countByCourseId(course.getId())
         );
     }
 
@@ -153,6 +182,8 @@ public class CourseService {
     private void deleteCourseData(Long courseId) {
         quizAttemptRepository.deleteByCourseId(courseId);
         lessonProgressRepository.deleteByCourseId(courseId);
+        wishlistRepository.deleteByCourseId(courseId);
+        reviewRepository.deleteByCourseId(courseId);
         enrollmentRepository.deleteByCourseId(courseId);
         courseRepository.deleteById(courseId);
     }

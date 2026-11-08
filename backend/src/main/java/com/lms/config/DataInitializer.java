@@ -7,11 +7,13 @@ import com.lms.entity.LessonProgress;
 import com.lms.entity.Question;
 import com.lms.entity.QuestionOption;
 import com.lms.entity.Quiz;
+import com.lms.entity.Review;
 import com.lms.entity.Role;
 import com.lms.entity.User;
 import com.lms.repository.CourseRepository;
 import com.lms.repository.EnrollmentRepository;
 import com.lms.repository.LessonProgressRepository;
+import com.lms.repository.ReviewRepository;
 import com.lms.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,17 +31,20 @@ public class DataInitializer implements CommandLineRunner {
     private final CourseRepository courseRepository;
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
+    private final ReviewRepository reviewRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepository,
                            CourseRepository courseRepository,
                            EnrollmentRepository enrollmentRepository,
                            LessonProgressRepository lessonProgressRepository,
+                           ReviewRepository reviewRepository,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.courseRepository = courseRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.lessonProgressRepository = lessonProgressRepository;
+        this.reviewRepository = reviewRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -60,10 +65,18 @@ public class DataInitializer implements CommandLineRunner {
 
         Course javaCourse = ensureCourse("Java Spring Boot Masterclass", () -> buildJavaCourse(priya));
         Course reactCourse = ensureCourse("Modern React & Tailwind CSS", () -> buildReactCourse(marcus));
-        ensureCourse("Data Structures Essentials", () -> buildDsaCourse(priya));
+        Course dsaCourse = ensureCourse("Data Structures Essentials", () -> buildDsaCourse(priya));
 
         ensureEnrollment(aarav, javaCourse);
         ensureEnrollment(sofia, reactCourse);
+        ensureEnrollment(aarav, dsaCourse);
+
+        ensureReview(aarav, javaCourse, 5,
+                "Excellent structure and practical examples. The Spring Security and JWT sections helped me connect the backend concepts to a real project.");
+        ensureReview(sofia, reactCourse, 5,
+                "The React and Tailwind lessons are clear and easy to follow. I especially liked how the course builds a responsive interface step by step.");
+        ensureReview(aarav, dsaCourse, 4,
+                "Strong explanations of complexity and core data structures. The visual references made the tree and hash map lessons much easier to understand.");
 
         int teacherIndex = 0;
         for (CourseSeedCatalog.CourseSeed seed : CourseSeedCatalog.courses()) {
@@ -89,6 +102,19 @@ public class DataInitializer implements CommandLineRunner {
         if (lessonProgressRepository.findByStudentIdAndLessonId(student.getId(), firstLesson.getId()).isEmpty()) {
             markFirstLessonComplete(student, course);
         }
+    }
+
+    private void ensureReview(User student, Course course, int rating, String comment) {
+        if (reviewRepository.findByStudentIdAndCourseId(student.getId(), course.getId()).isPresent()) {
+            return;
+        }
+        Review review = new Review();
+        review.setStudent(student);
+        review.setCourse(course);
+        review.setRating(rating);
+        review.setComment(comment);
+        review.setCreatedAt(LocalDateTime.now().minusDays(3));
+        reviewRepository.save(review);
     }
 
     private void seedAdditionalCourse(CourseSeedCatalog.CourseSeed seed, User teacher) {

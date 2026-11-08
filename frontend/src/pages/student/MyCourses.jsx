@@ -156,6 +156,9 @@ export default function MyCourses() {
                           <CheckCircle2 className="h-4 w-4" /> Certificate ready
                         </span>
                       )}
+                      <Link to={`/student/courses/${course.id}`} className="btn-ghost">
+                        Details & reviews
+                      </Link>
                     </div>
                   </div>
                 </div>

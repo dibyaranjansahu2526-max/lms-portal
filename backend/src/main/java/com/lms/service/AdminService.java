@@ -13,7 +13,9 @@ import com.lms.repository.LessonProgressRepository;
 import com.lms.repository.LessonRepository;
 import com.lms.repository.QuizAttemptRepository;
 import com.lms.repository.QuizRepository;
+import com.lms.repository.ReviewRepository;
 import com.lms.repository.UserRepository;
+import com.lms.repository.WishlistRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,8 @@ public class AdminService {
     private final QuizRepository quizRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final QuizAttemptRepository quizAttemptRepository;
+    private final ReviewRepository reviewRepository;
+    private final WishlistRepository wishlistRepository;
     private final CourseService courseService;
     private final CurrentUserService currentUserService;
 
@@ -41,6 +45,8 @@ public class AdminService {
                         QuizRepository quizRepository,
                         LessonProgressRepository lessonProgressRepository,
                         QuizAttemptRepository quizAttemptRepository,
+                        ReviewRepository reviewRepository,
+                        WishlistRepository wishlistRepository,
                         CourseService courseService,
                         CurrentUserService currentUserService) {
         this.userRepository = userRepository;
@@ -50,6 +56,8 @@ public class AdminService {
         this.quizRepository = quizRepository;
         this.lessonProgressRepository = lessonProgressRepository;
         this.quizAttemptRepository = quizAttemptRepository;
+        this.reviewRepository = reviewRepository;
+        this.wishlistRepository = wishlistRepository;
         this.courseService = courseService;
         this.currentUserService = currentUserService;
     }
@@ -100,6 +108,8 @@ public class AdminService {
             }
         }
 
+        reviewRepository.deleteByStudentId(target.getId());
+        wishlistRepository.deleteByStudentId(target.getId());
         lessonProgressRepository.deleteByStudentId(target.getId());
         quizAttemptRepository.deleteByStudentId(target.getId());
         enrollmentRepository.deleteByStudentId(target.getId());

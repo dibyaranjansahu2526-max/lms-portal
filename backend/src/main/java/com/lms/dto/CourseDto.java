@@ -14,6 +14,8 @@ public record CourseDto(
         long lessonCount,
         long quizCount,
         long enrollmentCount,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        double averageRating,
+        long reviewCount
 ) {
 }

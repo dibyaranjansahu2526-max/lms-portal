@@ -116,9 +116,17 @@ export default function LearningPage() {
 
   return (
     <div className="page-enter">
-      <Link to="/student/courses" className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600">
-        <ArrowLeft className="h-4 w-4" /> Back to My Courses
-      </Link>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <Link to="/student/courses" className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-indigo-600">
+          <ArrowLeft className="h-4 w-4" /> Back to My Courses
+        </Link>
+        <Link
+          to={`/student/courses/${courseId}`}
+          className="text-sm font-semibold text-indigo-600 hover:text-indigo-800"
+        >
+          Course details &amp; reviews
+        </Link>
+      </div>
 
       <section className="card mb-6 overflow-hidden">
         <div className="bg-slate-950 px-6 py-6 text-white sm:px-8">

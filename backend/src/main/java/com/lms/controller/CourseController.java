@@ -1,7 +1,9 @@
 package com.lms.controller;
 
 import com.lms.dto.CourseDto;
+import com.lms.dto.ReviewSummaryDto;
 import com.lms.service.CourseService;
+import com.lms.service.ReviewService;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,15 +18,18 @@ import java.util.List;
 public class CourseController {
 
     private final CourseService courseService;
+    private final ReviewService reviewService;
 
-    public CourseController(CourseService courseService) {
+    public CourseController(CourseService courseService, ReviewService reviewService) {
         this.courseService = courseService;
+        this.reviewService = reviewService;
     }
 
     @GetMapping
     public List<CourseDto> browse(@RequestParam(required = false) String search,
-                                  @RequestParam(required = false) String category) {
-        return courseService.browse(search, category);
+                                  @RequestParam(required = false) String category,
+                                  @RequestParam(required = false) String sort) {
+        return courseService.browse(search, category, sort);
     }
 
     @GetMapping("/categories")
@@ -35,5 +40,10 @@ public class CourseController {
     @GetMapping("/{courseId}")
     public CourseDto getCourse(@PathVariable Long courseId, Authentication authentication) {
         return courseService.getVisible(courseId, authentication);
+    }
+
+    @GetMapping("/{courseId}/reviews")
+    public ReviewSummaryDto reviews(@PathVariable Long courseId, Authentication authentication) {
+        return reviewService.getForCourse(courseId, authentication);
     }
 }

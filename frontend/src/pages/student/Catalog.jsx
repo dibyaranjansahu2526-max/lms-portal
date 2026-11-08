@@ -26,8 +26,10 @@ export default function Catalog() {
   const [courses, setCourses] = useState([])
   const [categories, setCategories] = useState([])
   const [enrolledIds, setEnrolledIds] = useState(new Set())
+  const [wishlistedIds, setWishlistedIds] = useState(new Set())
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
+  const [sort, setSort] = useState('newest')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -43,6 +45,11 @@ export default function Catalog() {
       .get('/student/courses')
       .then(({ data }) => setEnrolledIds(new Set(data.map((enrollment) => enrollment.course.id))))
       .catch(() => setEnrolledIds(new Set()))
+
+    api
+      .get('/student/wishlist')
+      .then(({ data }) => setWishlistedIds(new Set(data.map((item) => item.course.id))))
+      .catch(() => setWishlistedIds(new Set()))
   }, [])
 
   useEffect(() => {
@@ -51,7 +58,13 @@ export default function Catalog() {
     setError('')
     const timer = window.setTimeout(() => {
       api
-        .get('/courses', { params: { search: search || undefined, category: category || undefined } })
+        .get('/courses', {
+          params: {
+            search: search || undefined,
+            category: category || undefined,
+            sort: sort || undefined,
+          },
+        })
         .then(({ data }) => {
           if (active) setCourses(data)
         })
@@ -67,7 +80,7 @@ export default function Catalog() {
       active = false
       window.clearTimeout(timer)
     }
-  }, [search, category])
+  }, [search, category, sort])
 
   const handleEnroll = async (course) => {
     setEnrollingId(course.id)
@@ -86,6 +99,36 @@ export default function Catalog() {
       setError(getErrorMessage(err, 'Could not enroll in this course.'))
     } finally {
       setEnrollingId(null)
+    }
+  }
+
+  const handleToggleWishlist = async (course) => {
+    const wasWishlisted = wishlistedIds.has(course.id)
+    setError('')
+    setSuccess('')
+    setWishlistedIds((current) => {
+      const next = new Set(current)
+      if (wasWishlisted) next.delete(course.id)
+      else next.add(course.id)
+      return next
+    })
+
+    try {
+      if (wasWishlisted) {
+        await api.delete(`/student/wishlist/${course.id}`)
+        setSuccess(`Removed "${course.title}" from your wishlist.`)
+      } else {
+        await api.post(`/student/wishlist/${course.id}`)
+        setSuccess(`Saved "${course.title}" to your wishlist.`)
+      }
+    } catch (err) {
+      setWishlistedIds((current) => {
+        const next = new Set(current)
+        if (wasWishlisted) next.add(course.id)
+        else next.delete(course.id)
+        return next
+      })
+      setError(getErrorMessage(err, 'Could not update your wishlist.'))
     }
   }
 
@@ -132,6 +175,22 @@ export default function Catalog() {
                   {item}
                 </option>
               ))}
+            </select>
+            <select
+              value={sort}
+              onChange={(event) => setSort(event.target.value)}
+              className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-medium text-white outline-none backdrop-blur focus:border-indigo-400"
+              aria-label="Sort courses"
+            >
+              <option value="newest" className="text-slate-900">
+                Newest
+              </option>
+              <option value="rating" className="text-slate-900">
+                Highest rated
+              </option>
+              <option value="popular" className="text-slate-900">
+                Most popular
+              </option>
             </select>
           </div>
         </div>
@@ -180,6 +239,8 @@ export default function Catalog() {
               enrolled={enrolledIds.has(course.id)}
               enrolling={enrollingId === course.id}
               onEnroll={handleEnroll}
+              wishlisted={wishlistedIds.has(course.id)}
+              onToggleWishlist={handleToggleWishlist}
             />
           ))}
         </div>
