@@ -26,13 +26,13 @@ export default function StudentDashboard() {
     setError('')
     Promise.all([
       api.get('/student/courses'),
-      api.get('/courses'),
+      api.get('/courses', { params: { size: 100 } }),
       api.get('/student/wishlist'),
     ])
       .then(([enrollmentResponse, courseResponse, wishlistResponse]) => {
         if (!active) return
         setEnrollments(enrollmentResponse.data)
-        setCourses(courseResponse.data)
+        setCourses(courseResponse.data.content ?? [])
         setWishlistedIds(new Set(wishlistResponse.data.map((item) => item.course.id)))
       })
       .catch((err) => {

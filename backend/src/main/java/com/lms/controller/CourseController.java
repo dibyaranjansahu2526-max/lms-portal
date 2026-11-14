@@ -1,6 +1,7 @@
 package com.lms.controller;
 
 import com.lms.dto.CourseDto;
+import com.lms.dto.CoursePageDto;
 import com.lms.dto.ReviewSummaryDto;
 import com.lms.service.CourseService;
 import com.lms.service.ReviewService;
@@ -26,10 +27,12 @@ public class CourseController {
     }
 
     @GetMapping
-    public List<CourseDto> browse(@RequestParam(required = false) String search,
-                                  @RequestParam(required = false) String category,
-                                  @RequestParam(required = false) String sort) {
-        return courseService.browse(search, category, sort);
+    public CoursePageDto browse(@RequestParam(required = false) String search,
+                                @RequestParam(required = false) String category,
+                                @RequestParam(required = false) String sort,
+                                @RequestParam(defaultValue = "0") int page,
+                                @RequestParam(defaultValue = "12") int size) {
+        return courseService.browse(search, category, sort, page, size);
     }
 
     @GetMapping("/categories")

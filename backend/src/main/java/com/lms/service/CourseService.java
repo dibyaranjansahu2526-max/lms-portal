@@ -1,6 +1,7 @@
 package com.lms.service;
 
 import com.lms.dto.CourseDto;
+import com.lms.dto.CoursePageDto;
 import com.lms.dto.CourseRequest;
 import com.lms.entity.Course;
 import com.lms.entity.Role;
@@ -55,15 +56,28 @@ public class CourseService {
     }
 
     @Transactional(readOnly = true)
-    public List<CourseDto> browse(String search, String category, String sort) {
+    public CoursePageDto browse(String search, String category, String sort, int page, int size) {
         String searchTerm = blankToNull(search);
         String categoryTerm = blankToNull(category);
         String sortKey = sort == null ? "newest" : sort.trim().toLowerCase();
-        return courseRepository.searchPublished(searchTerm, categoryTerm)
+
+        List<CourseDto> courses = courseRepository.searchPublished(searchTerm, categoryTerm)
                 .stream()
                 .map(this::toDto)
                 .sorted(comparatorFor(sortKey))
                 .toList();
+
+        int pageSize = Math.max(1, size);
+        int totalPages = courses.isEmpty() ? 0 : (int) Math.ceil(courses.size() / (double) pageSize);
+        int pageIndex = Math.max(0, Math.min(page, Math.max(totalPages - 1, 0)));
+        int fromIndex = Math.min(pageIndex * pageSize, courses.size());
+        int toIndex = Math.min(fromIndex + pageSize, courses.size());
+
+        return new CoursePageDto(
+                courses.subList(fromIndex, toIndex),
+                totalPages,
+                courses.size()
+        );
     }
 
     private Comparator<CourseDto> comparatorFor(String sortKey) {

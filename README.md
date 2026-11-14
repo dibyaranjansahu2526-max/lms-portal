@@ -237,7 +237,7 @@ All endpoints are prefixed with `/api`. Protected endpoints require `Authorizati
 | POST | `/auth/register` | Public | Register a student |
 | POST | `/auth/login` | Public | Login and receive a JWT |
 | GET | `/auth/me` | Authenticated | Current user profile |
-| GET | `/courses?search=&category=&sort=` | Authenticated | Browse published courses; `sort` is `newest`, `rating` or `popular` |
+| GET | `/courses?page=0&size=12&search=&category=&sort=` | Authenticated | Browse published courses (paged: returns `content`, `totalPages`, `totalElements`); `sort` is `newest`, `rating` or `popular` |
 | GET | `/courses/categories` | Authenticated | List categories |
 | GET | `/courses/{id}` | Authenticated | Course details with average rating and review count |
 | GET | `/courses/{id}/reviews` | Authenticated | Review summary, review list and the current student's review |

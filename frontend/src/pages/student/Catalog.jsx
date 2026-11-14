@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { BookOpen, Compass, Search, Sparkles } from 'lucide-react'
+import { BookOpen, ChevronLeft, ChevronRight, Compass, Search, Sparkles } from 'lucide-react'
 import api, { getErrorMessage } from '../../api/client'
 import CourseCard from '../../components/CourseCard'
 import { EmptyState, ErrorAlert, SuccessAlert } from '../../components/Feedback'
 import { SkeletonCard } from '../../components/Loading'
 import PageHeader from '../../components/PageHeader'
 import { useAuth } from '../../context/AuthContext'
+
+const PAGE_SIZE = 12
 
 const ALL_CATEGORIES = [
   'Programming',
@@ -30,6 +32,9 @@ export default function Catalog() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('')
   const [sort, setSort] = useState('newest')
+  const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -63,10 +68,18 @@ export default function Catalog() {
             search: search || undefined,
             category: category || undefined,
             sort: sort || undefined,
+            page,
+            size: PAGE_SIZE,
           },
         })
         .then(({ data }) => {
-          if (active) setCourses(data)
+          if (!active) return
+          const content = data?.content ?? []
+          setCourses(content)
+          setTotalPages(data?.totalPages ?? 0)
+          setTotalElements(data?.totalElements ?? content.length)
+          const lastPage = Math.max((data?.totalPages ?? 0) - 1, 0)
+          if (page > lastPage) setPage(lastPage)
         })
         .catch((err) => {
           if (active) setError(getErrorMessage(err, 'Could not load courses.'))
@@ -80,7 +93,7 @@ export default function Catalog() {
       active = false
       window.clearTimeout(timer)
     }
-  }, [search, category, sort])
+  }, [search, category, sort, page])
 
   const handleEnroll = async (course) => {
     setEnrollingId(course.id)
@@ -134,6 +147,11 @@ export default function Catalog() {
 
   const firstName = useMemo(() => user?.name?.split(' ')[0] || 'there', [user])
 
+  const goToPage = (nextPage) => {
+    setPage(nextPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
   return (
     <div className="page-enter">
       <section className="relative mb-8 overflow-hidden rounded-3xl bg-slate-950 px-6 py-10 text-white sm:px-10 sm:py-14">
@@ -157,14 +175,20 @@ export default function Catalog() {
               <input
                 type="search"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value)
+                  setPage(0)
+                }}
                 className="w-full rounded-xl border border-white/10 bg-white/10 py-3 pl-12 pr-4 text-sm text-white outline-none backdrop-blur placeholder:text-slate-400 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20"
                 placeholder="Search by title or description..."
               />
             </div>
             <select
               value={category}
-              onChange={(event) => setCategory(event.target.value)}
+              onChange={(event) => {
+                setCategory(event.target.value)
+                setPage(0)
+              }}
               className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-medium text-white outline-none backdrop-blur focus:border-indigo-400"
             >
               <option value="" className="text-slate-900">
@@ -178,7 +202,10 @@ export default function Catalog() {
             </select>
             <select
               value={sort}
-              onChange={(event) => setSort(event.target.value)}
+              onChange={(event) => {
+                setSort(event.target.value)
+                setPage(0)
+              }}
               className="rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-medium text-white outline-none backdrop-blur focus:border-indigo-400"
               aria-label="Sort courses"
             >
@@ -205,7 +232,7 @@ export default function Catalog() {
         description={
           loading
             ? 'Finding the best courses for you...'
-            : `${courses.length} course${courses.length === 1 ? '' : 's'} available to enroll`
+            : `${totalElements} course${totalElements === 1 ? '' : 's'} available to enroll`
         }
         action={
           <Link to="/student/courses" className="btn-secondary">
@@ -244,6 +271,33 @@ export default function Catalog() {
             />
           ))}
         </div>
+      )}
+
+      {!loading && totalPages > 1 && (
+        <nav
+          className="mt-8 flex items-center justify-between gap-4"
+          aria-label="Course catalog pagination"
+        >
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => goToPage(Math.max(0, page - 1))}
+            disabled={page === 0}
+          >
+            <ChevronLeft className="h-4 w-4" /> Previous
+          </button>
+          <p className="text-sm font-medium text-slate-600">
+            Page {page + 1} of {totalPages}
+          </p>
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={() => goToPage(Math.min(totalPages - 1, page + 1))}
+            disabled={page >= totalPages - 1}
+          >
+            Next <ChevronRight className="h-4 w-4" />
+          </button>
+        </nav>
       )}
     </div>
   )
