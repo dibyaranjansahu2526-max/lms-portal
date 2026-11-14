@@ -9,9 +9,14 @@ import Register from './pages/auth/Register'
 import Catalog from './pages/student/Catalog'
 import CourseDetail from './pages/student/CourseDetail'
 import LearningPage from './pages/student/LearningPage'
+import MockTestHistory from './pages/student/MockTestHistory'
+import MockTestLeaderboard from './pages/student/MockTestLeaderboard'
+import MockTestResult from './pages/student/MockTestResult'
+import MockTestStart from './pages/student/MockTestStart'
 import MyCourses from './pages/student/MyCourses'
 import QuizPage from './pages/student/QuizPage'
 import StudentDashboard from './pages/student/StudentDashboard'
+import StudentMockTests from './pages/student/StudentMockTests'
 import Wishlist from './pages/student/Wishlist'
 import AdminCourses from './pages/admin/AdminCourses'
 import AdminDashboard from './pages/admin/AdminDashboard'
@@ -20,6 +25,8 @@ import CourseForm from './pages/teacher/CourseForm'
 import LessonManager from './pages/teacher/LessonManager'
 import QuizBuilder from './pages/teacher/QuizBuilder'
 import TeacherCourses from './pages/teacher/TeacherCourses'
+import TeacherMockTestQuestions from './pages/teacher/TeacherMockTestQuestions'
+import TeacherMockTests from './pages/teacher/TeacherMockTests'
 import TeacherStudents from './pages/teacher/TeacherStudents'
 
 function HomeRedirect() {
@@ -111,6 +118,46 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/student/mock-tests"
+          element={
+            <ProtectedRoute roles={['STUDENT']}>
+              <StudentMockTests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/mock-tests/:testId/start"
+          element={
+            <ProtectedRoute roles={['STUDENT']}>
+              <MockTestStart />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/mock-tests/:testId/results/:attemptId"
+          element={
+            <ProtectedRoute roles={['STUDENT']}>
+              <MockTestResult />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/mock-tests/:testId/history"
+          element={
+            <ProtectedRoute roles={['STUDENT']}>
+              <MockTestHistory />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/mock-tests/:testId/leaderboard"
+          element={
+            <ProtectedRoute roles={['STUDENT']}>
+              <MockTestLeaderboard />
+            </ProtectedRoute>
+          }
+        />
 
         <Route
           path="/teacher/courses"
@@ -157,6 +204,22 @@ export default function App() {
           element={
             <ProtectedRoute roles={['TEACHER']}>
               <TeacherStudents />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/mock-tests"
+          element={
+            <ProtectedRoute roles={['TEACHER']}>
+              <TeacherMockTests />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/mock-tests/:testId/questions"
+          element={
+            <ProtectedRoute roles={['TEACHER']}>
+              <TeacherMockTestQuestions />
             </ProtectedRoute>
           }
         />

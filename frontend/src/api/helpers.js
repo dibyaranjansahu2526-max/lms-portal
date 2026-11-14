@@ -42,6 +42,37 @@ export function initials(name = '') {
     .toUpperCase()
 }
 
+export function formatMarks(value) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—'
+  const number = Number(value)
+  return Number.isInteger(number) ? String(number) : number.toFixed(2).replace(/0+$/, '').replace(/\.$/, '')
+}
+
+export function formatDuration(seconds) {
+  const safe = Math.max(0, Math.floor(Number(seconds) || 0))
+  const hours = Math.floor(safe / 3600)
+  const minutes = Math.floor((safe % 3600) / 60)
+  const remainingSeconds = safe % 60
+  if (hours > 0) {
+    return `${hours}h ${String(minutes).padStart(2, '0')}m`
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${String(remainingSeconds).padStart(2, '0')}s`
+  }
+  return `${remainingSeconds}s`
+}
+
+export function formatClock(seconds) {
+  const safe = Math.max(0, Math.floor(Number(seconds) || 0))
+  const hours = Math.floor(safe / 3600)
+  const minutes = Math.floor((safe % 3600) / 60)
+  const remainingSeconds = safe % 60
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
+  }
+  return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`
+}
+
 export function getYoutubeEmbed(url) {
   if (!url) return null
   try {

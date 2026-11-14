@@ -4,6 +4,8 @@ import com.lms.dto.AdminStatsDto;
 import com.lms.dto.CourseDto;
 import com.lms.dto.UserDto;
 import com.lms.entity.Course;
+import com.lms.entity.MockAttempt;
+import com.lms.entity.MockTest;
 import com.lms.entity.Role;
 import com.lms.entity.User;
 import com.lms.exception.ApiException;
@@ -11,6 +13,8 @@ import com.lms.repository.CourseRepository;
 import com.lms.repository.EnrollmentRepository;
 import com.lms.repository.LessonProgressRepository;
 import com.lms.repository.LessonRepository;
+import com.lms.repository.MockAttemptRepository;
+import com.lms.repository.MockTestRepository;
 import com.lms.repository.QuizAttemptRepository;
 import com.lms.repository.QuizRepository;
 import com.lms.repository.ReviewRepository;
@@ -35,6 +39,8 @@ public class AdminService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final ReviewRepository reviewRepository;
     private final WishlistRepository wishlistRepository;
+    private final MockTestRepository mockTestRepository;
+    private final MockAttemptRepository mockAttemptRepository;
     private final CourseService courseService;
     private final CurrentUserService currentUserService;
 
@@ -47,6 +53,8 @@ public class AdminService {
                         QuizAttemptRepository quizAttemptRepository,
                         ReviewRepository reviewRepository,
                         WishlistRepository wishlistRepository,
+                        MockTestRepository mockTestRepository,
+                        MockAttemptRepository mockAttemptRepository,
                         CourseService courseService,
                         CurrentUserService currentUserService) {
         this.userRepository = userRepository;
@@ -58,6 +66,8 @@ public class AdminService {
         this.quizAttemptRepository = quizAttemptRepository;
         this.reviewRepository = reviewRepository;
         this.wishlistRepository = wishlistRepository;
+        this.mockTestRepository = mockTestRepository;
+        this.mockAttemptRepository = mockAttemptRepository;
         this.courseService = courseService;
         this.currentUserService = currentUserService;
     }
@@ -106,7 +116,12 @@ public class AdminService {
             for (Course course : courses) {
                 courseService.deleteCourseAsAdmin(course.getId());
             }
+            List<MockTest> mockTests = mockTestRepository.findByTeacherIdOrderByCreatedAtDesc(target.getId());
+            mockTestRepository.deleteAll(mockTests);
         }
+
+        List<MockAttempt> mockAttempts = mockAttemptRepository.findByStudentId(target.getId());
+        mockAttemptRepository.deleteAll(mockAttempts);
 
         reviewRepository.deleteByStudentId(target.getId());
         wishlistRepository.deleteByStudentId(target.getId());

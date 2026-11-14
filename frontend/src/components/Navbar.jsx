@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
   BookOpen,
   ChevronDown,
+  ClipboardList,
   Compass,
   GraduationCap,
   Heart,
@@ -21,10 +22,12 @@ const NAV_LINKS = {
     { to: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/student/catalog', label: 'Catalog', icon: Compass },
     { to: '/student/courses', label: 'My Courses', icon: BookOpen },
+    { to: '/student/mock-tests', label: 'Mock Tests', icon: ClipboardList },
     { to: '/student/wishlist', label: 'Wishlist', icon: Heart },
   ],
   TEACHER: [
     { to: '/teacher/courses', label: 'My Courses', icon: LibraryBig },
+    { to: '/teacher/mock-tests', label: 'Mock Tests', icon: ClipboardList },
   ],
   ADMIN: [
     { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },

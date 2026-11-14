@@ -5,11 +5,15 @@ import com.lms.dto.CourseRequest;
 import com.lms.dto.EnrolledStudentDto;
 import com.lms.dto.LessonDto;
 import com.lms.dto.LessonRequest;
+import com.lms.dto.MockQuestionRequest;
+import com.lms.dto.MockTestDto;
+import com.lms.dto.MockTestRequest;
 import com.lms.dto.QuizDto;
 import com.lms.dto.QuizRequest;
 import com.lms.service.CourseService;
 import com.lms.service.EnrollmentService;
 import com.lms.service.LessonService;
+import com.lms.service.MockTestService;
 import com.lms.service.QuizService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -34,15 +38,18 @@ public class TeacherController {
     private final LessonService lessonService;
     private final QuizService quizService;
     private final EnrollmentService enrollmentService;
+    private final MockTestService mockTestService;
 
     public TeacherController(CourseService courseService,
                              LessonService lessonService,
                              QuizService quizService,
-                             EnrollmentService enrollmentService) {
+                             EnrollmentService enrollmentService,
+                             MockTestService mockTestService) {
         this.courseService = courseService;
         this.lessonService = lessonService;
         this.quizService = quizService;
         this.enrollmentService = enrollmentService;
+        this.mockTestService = mockTestService;
     }
 
     @GetMapping("/courses")
@@ -124,5 +131,58 @@ public class TeacherController {
     @GetMapping("/courses/{courseId}/students")
     public List<EnrolledStudentDto> students(@PathVariable Long courseId, Authentication authentication) {
         return enrollmentService.getEnrolledStudents(courseId, authentication);
+    }
+
+    @GetMapping("/mock-tests")
+    public List<MockTestDto> mockTests(Authentication authentication) {
+        return mockTestService.teacherTests(authentication);
+    }
+
+    @GetMapping("/mock-tests/{testId}")
+    public MockTestDto mockTest(@PathVariable Long testId, Authentication authentication) {
+        return mockTestService.teacherTest(testId, authentication);
+    }
+
+    @PostMapping("/mock-tests")
+    public ResponseEntity<MockTestDto> createMockTest(@Valid @RequestBody MockTestRequest request,
+                                                      Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(mockTestService.createTest(request, authentication));
+    }
+
+    @PutMapping("/mock-tests/{testId}")
+    public MockTestDto updateMockTest(@PathVariable Long testId,
+                                      @Valid @RequestBody MockTestRequest request,
+                                      Authentication authentication) {
+        return mockTestService.updateTest(testId, request, authentication);
+    }
+
+    @DeleteMapping("/mock-tests/{testId}")
+    public ResponseEntity<Void> deleteMockTest(@PathVariable Long testId, Authentication authentication) {
+        mockTestService.deleteTest(testId, authentication);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/mock-tests/{testId}/questions")
+    public ResponseEntity<MockTestDto.QuestionDto> addMockQuestion(@PathVariable Long testId,
+                                                                   @Valid @RequestBody MockQuestionRequest request,
+                                                                   Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(mockTestService.addQuestion(testId, request, authentication));
+    }
+
+    @PutMapping("/mock-tests/{testId}/questions/{questionId}")
+    public MockTestDto.QuestionDto updateMockQuestion(@PathVariable Long testId,
+                                                      @PathVariable Long questionId,
+                                                      @Valid @RequestBody MockQuestionRequest request,
+                                                      Authentication authentication) {
+        return mockTestService.updateQuestion(testId, questionId, request, authentication);
+    }
+
+    @DeleteMapping("/mock-tests/{testId}/questions/{questionId}")
+    public ResponseEntity<Void> deleteMockQuestion(@PathVariable Long testId,
+                                                   @PathVariable Long questionId,
+                                                   Authentication authentication) {
+        mockTestService.deleteQuestion(testId, questionId, authentication);
+        return ResponseEntity.noContent().build();
     }
 }

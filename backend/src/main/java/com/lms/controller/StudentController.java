@@ -2,16 +2,24 @@ package com.lms.controller;
 
 import com.lms.dto.EnrolledCourseDto;
 import com.lms.dto.LearningResponse;
+import com.lms.dto.MockAnswerRequest;
+import com.lms.dto.MockHistoryDto;
+import com.lms.dto.MockLeaderboardDto;
+import com.lms.dto.MockResultDto;
+import com.lms.dto.MockStartDto;
+import com.lms.dto.MockSubmissionRequest;
 import com.lms.dto.ProgressDto;
 import com.lms.dto.QuizResultDto;
 import com.lms.dto.QuizSubmissionRequest;
 import com.lms.dto.ReviewDto;
 import com.lms.dto.ReviewRequest;
+import com.lms.dto.StudentMockTestDto;
 import com.lms.dto.StudentQuizDto;
 import com.lms.dto.WishlistDto;
 import com.lms.service.CertificateService;
 import com.lms.service.EnrollmentService;
 import com.lms.service.LessonService;
+import com.lms.service.MockTestService;
 import com.lms.service.QuizService;
 import com.lms.service.ReviewService;
 import com.lms.service.WishlistService;
@@ -42,19 +50,22 @@ public class StudentController {
     private final CertificateService certificateService;
     private final WishlistService wishlistService;
     private final ReviewService reviewService;
+    private final MockTestService mockTestService;
 
     public StudentController(EnrollmentService enrollmentService,
                              LessonService lessonService,
                              QuizService quizService,
                              CertificateService certificateService,
                              WishlistService wishlistService,
-                             ReviewService reviewService) {
+                             ReviewService reviewService,
+                             MockTestService mockTestService) {
         this.enrollmentService = enrollmentService;
         this.lessonService = lessonService;
         this.quizService = quizService;
         this.certificateService = certificateService;
         this.wishlistService = wishlistService;
         this.reviewService = reviewService;
+        this.mockTestService = mockTestService;
     }
 
     @PostMapping("/api/courses/{courseId}/enroll")
@@ -127,5 +138,46 @@ public class StudentController {
         headers.setContentDisposition(ContentDisposition.attachment().filename(certificate.filename()).build());
         headers.setContentLength(certificate.bytes().length);
         return ResponseEntity.ok().headers(headers).body(certificate.bytes());
+    }
+
+    @GetMapping("/api/student/mock-tests")
+    public List<StudentMockTestDto> mockTests(Authentication authentication) {
+        return mockTestService.publishedTests(authentication);
+    }
+
+    @PostMapping("/api/student/mock-tests/{testId}/attempts")
+    public MockStartDto startMockAttempt(@PathVariable Long testId, Authentication authentication) {
+        return mockTestService.startAttempt(testId, authentication);
+    }
+
+    @PutMapping("/api/student/mock-attempts/{attemptId}/answers/{questionId}")
+    public ResponseEntity<Void> saveMockAnswer(@PathVariable Long attemptId,
+                                               @PathVariable Long questionId,
+                                               @Valid @RequestBody MockAnswerRequest request,
+                                               Authentication authentication) {
+        mockTestService.saveAnswer(attemptId, questionId, request, authentication);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/api/student/mock-attempts/{attemptId}/submit")
+    public MockResultDto submitMockAttempt(@PathVariable Long attemptId,
+                                           @Valid @RequestBody(required = false) MockSubmissionRequest request,
+                                           Authentication authentication) {
+        return mockTestService.submitAttempt(attemptId, request, authentication);
+    }
+
+    @GetMapping("/api/student/mock-attempts/{attemptId}/result")
+    public MockResultDto mockResult(@PathVariable Long attemptId, Authentication authentication) {
+        return mockTestService.result(attemptId, authentication);
+    }
+
+    @GetMapping("/api/student/mock-tests/{testId}/attempts")
+    public MockHistoryDto mockHistory(@PathVariable Long testId, Authentication authentication) {
+        return mockTestService.history(testId, authentication);
+    }
+
+    @GetMapping("/api/student/mock-tests/{testId}/leaderboard")
+    public MockLeaderboardDto mockLeaderboard(@PathVariable Long testId, Authentication authentication) {
+        return mockTestService.leaderboard(testId, authentication);
     }
 }

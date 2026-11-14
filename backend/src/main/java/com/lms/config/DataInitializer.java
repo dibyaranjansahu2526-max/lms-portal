@@ -4,6 +4,11 @@ import com.lms.entity.Course;
 import com.lms.entity.Enrollment;
 import com.lms.entity.Lesson;
 import com.lms.entity.LessonProgress;
+import com.lms.entity.MockAnswer;
+import com.lms.entity.MockAttempt;
+import com.lms.entity.MockOption;
+import com.lms.entity.MockQuestion;
+import com.lms.entity.MockTest;
 import com.lms.entity.Question;
 import com.lms.entity.QuestionOption;
 import com.lms.entity.Quiz;
@@ -13,6 +18,8 @@ import com.lms.entity.User;
 import com.lms.repository.CourseRepository;
 import com.lms.repository.EnrollmentRepository;
 import com.lms.repository.LessonProgressRepository;
+import com.lms.repository.MockAttemptRepository;
+import com.lms.repository.MockTestRepository;
 import com.lms.repository.ReviewRepository;
 import com.lms.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
@@ -32,6 +39,8 @@ public class DataInitializer implements CommandLineRunner {
     private final EnrollmentRepository enrollmentRepository;
     private final LessonProgressRepository lessonProgressRepository;
     private final ReviewRepository reviewRepository;
+    private final MockTestRepository mockTestRepository;
+    private final MockAttemptRepository mockAttemptRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataInitializer(UserRepository userRepository,
@@ -39,12 +48,16 @@ public class DataInitializer implements CommandLineRunner {
                            EnrollmentRepository enrollmentRepository,
                            LessonProgressRepository lessonProgressRepository,
                            ReviewRepository reviewRepository,
+                           MockTestRepository mockTestRepository,
+                           MockAttemptRepository mockAttemptRepository,
                            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.courseRepository = courseRepository;
         this.enrollmentRepository = enrollmentRepository;
         this.lessonProgressRepository = lessonProgressRepository;
         this.reviewRepository = reviewRepository;
+        this.mockTestRepository = mockTestRepository;
+        this.mockAttemptRepository = mockAttemptRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -62,6 +75,7 @@ public class DataInitializer implements CommandLineRunner {
         User marcus = userRepository.findByEmailIgnoreCase("teacher2@lms.com").orElseThrow();
         User aarav = userRepository.findByEmailIgnoreCase("student1@lms.com").orElseThrow();
         User sofia = userRepository.findByEmailIgnoreCase("student2@lms.com").orElseThrow();
+        User daniel = userRepository.findByEmailIgnoreCase("student3@lms.com").orElseThrow();
 
         Course javaCourse = ensureCourse("Java Spring Boot Masterclass", () -> buildJavaCourse(priya));
         Course reactCourse = ensureCourse("Modern React & Tailwind CSS", () -> buildReactCourse(marcus));
@@ -84,6 +98,133 @@ public class DataInitializer implements CommandLineRunner {
             seedAdditionalCourse(seed, teacher);
             teacherIndex++;
         }
+
+        seedMockTests(priya, List.of(aarav, sofia, daniel));
+    }
+
+    private void seedMockTests(User teacher, List<User> students) {
+        for (MockTestSeedCatalog.TestSeed seed : MockTestSeedCatalog.tests()) {
+            MockTest test = mockTestRepository.findByTitleIgnoreCaseAndTeacherId(seed.title(), teacher.getId())
+                    .orElseGet(() -> createMockTest(seed, teacher));
+            seedMockAttempts(test, students);
+        }
+    }
+
+    private MockTest createMockTest(MockTestSeedCatalog.TestSeed seed, User teacher) {
+        MockTest test = new MockTest();
+        test.setTitle(seed.title());
+        test.setDescription(seed.description());
+        test.setCategory(seed.category());
+        test.setDurationMinutes(seed.durationMinutes());
+        test.setTotalMarks(seed.totalMarks());
+        test.setMarksPerCorrect(seed.marksPerCorrect());
+        test.setNegativeMarks(seed.negativeMarks());
+        test.setPublished(true);
+        test.setTeacher(teacher);
+        test.setCreatedAt(LocalDateTime.now().minusDays(7));
+
+        int questionOrder = 1;
+        for (MockTestSeedCatalog.QuestionSeed questionSeed : seed.questions()) {
+            MockQuestion question = new MockQuestion();
+            question.setText(questionSeed.text());
+            question.setQuestionOrder(questionOrder++);
+            question.setMockTest(test);
+
+            int optionOrder = 1;
+            for (int i = 0; i < questionSeed.options().size(); i++) {
+                MockOption option = new MockOption();
+                option.setText(questionSeed.options().get(i));
+                option.setCorrect(i == questionSeed.correctIndex());
+                option.setOptionOrder(optionOrder++);
+                option.setQuestion(question);
+                question.getOptions().add(option);
+            }
+            test.getQuestions().add(question);
+        }
+
+        return mockTestRepository.save(test);
+    }
+
+    private void seedMockAttempts(MockTest test, List<User> students) {
+        if (test.getQuestions().isEmpty()
+                || mockAttemptRepository.countByMockTestIdAndSubmittedAtIsNotNull(test.getId()) > 0) {
+            return;
+        }
+
+        int[] correctCounts = {8, 6, 4};
+        int[] wrongCounts = {1, 2, 3};
+        int[] minutesAgo = {75, 180, 320};
+        int sampleCount = Math.min(students.size(), correctCounts.length);
+
+        for (int sample = 0; sample < sampleCount; sample++) {
+            User student = students.get(sample);
+            int correctCount = Math.min(correctCounts[sample], test.getQuestions().size());
+            int wrongCount = Math.min(wrongCounts[sample], test.getQuestions().size() - correctCount);
+            int unansweredCount = test.getQuestions().size() - correctCount - wrongCount;
+
+            MockAttempt attempt = new MockAttempt();
+            attempt.setStudent(student);
+            attempt.setMockTest(test);
+            LocalDateTime submittedAt = LocalDateTime.now().minusMinutes(minutesAgo[sample]);
+            long timeTakenSeconds = Math.max(120, test.getDurationMinutes() * 60L - (sample + 1) * 45L);
+            attempt.setStartedAt(submittedAt.minusSeconds(timeTakenSeconds));
+            attempt.setSubmittedAt(submittedAt);
+            attempt.setStatus(MockAttempt.STATUS_SUBMITTED);
+            attempt.setTotalMarks(test.getTotalMarks());
+            attempt.setTotalQuestions(test.getQuestions().size());
+            attempt.setTimeTakenSeconds(timeTakenSeconds);
+
+            double score = 0;
+            int questionIndex = 0;
+            for (MockQuestion question : test.getQuestions()) {
+                MockOption correctOption = question.getOptions().stream()
+                        .filter(MockOption::isCorrect)
+                        .findFirst()
+                        .orElseThrow();
+                MockOption wrongOption = question.getOptions().stream()
+                        .filter(option -> !option.isCorrect())
+                        .findFirst()
+                        .orElseThrow();
+
+                boolean answered = questionIndex < correctCount + wrongCount;
+                boolean correct = questionIndex < correctCount;
+                MockOption selectedOption = correct ? correctOption : (answered ? wrongOption : null);
+                double marksAwarded = correct
+                        ? test.getMarksPerCorrect()
+                        : (answered ? -test.getNegativeMarks() : 0);
+                score += marksAwarded;
+
+                MockAnswer answer = new MockAnswer();
+                answer.setAttempt(attempt);
+                answer.setQuestionId(question.getId());
+                answer.setQuestionText(question.getText());
+                answer.setQuestionOrder(question.getQuestionOrder());
+                answer.setSelectedOptionId(selectedOption == null ? null : selectedOption.getId());
+                answer.setSelectedOptionText(selectedOption == null ? null : selectedOption.getText());
+                answer.setCorrectOptionId(correctOption.getId());
+                answer.setCorrectOptionText(correctOption.getText());
+                answer.setCorrect(correct);
+                answer.setAnswered(answered);
+                answer.setMarksAwarded(marksAwarded);
+                attempt.getAnswers().add(answer);
+                questionIndex++;
+            }
+
+            attempt.setScore(round2(score));
+            attempt.setCorrectCount(correctCount);
+            attempt.setWrongCount(wrongCount);
+            attempt.setUnansweredCount(unansweredCount);
+            attempt.setPassed(percentage(score, test.getTotalMarks()) >= 40);
+            mockAttemptRepository.save(attempt);
+        }
+    }
+
+    private double percentage(double score, double totalMarks) {
+        return totalMarks <= 0 ? 0 : round2((score * 100.0) / totalMarks);
+    }
+
+    private double round2(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 
     private Course ensureCourse(String title, Supplier<Course> factory) {
