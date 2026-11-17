@@ -54,6 +54,9 @@ class QuizServiceTest {
     private CurrentUserService currentUserService;
 
     @Mock
+    private NotificationService notificationService;
+
+    @Mock
     private Authentication authentication;
 
     @InjectMocks

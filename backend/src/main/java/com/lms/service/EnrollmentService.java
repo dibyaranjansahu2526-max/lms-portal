@@ -42,6 +42,7 @@ public class EnrollmentService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final CourseService courseService;
     private final CurrentUserService currentUserService;
+    private final NotificationService notificationService;
 
     public EnrollmentService(EnrollmentRepository enrollmentRepository,
                              LessonRepository lessonRepository,
@@ -49,7 +50,8 @@ public class EnrollmentService {
                              QuizRepository quizRepository,
                              QuizAttemptRepository quizAttemptRepository,
                              CourseService courseService,
-                             CurrentUserService currentUserService) {
+                             CurrentUserService currentUserService,
+                             NotificationService notificationService) {
         this.enrollmentRepository = enrollmentRepository;
         this.lessonRepository = lessonRepository;
         this.lessonProgressRepository = lessonProgressRepository;
@@ -57,6 +59,7 @@ public class EnrollmentService {
         this.quizAttemptRepository = quizAttemptRepository;
         this.courseService = courseService;
         this.currentUserService = currentUserService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -75,6 +78,19 @@ public class EnrollmentService {
         enrollment.setCourse(course);
         enrollment.setCompleted(false);
         enrollment = enrollmentRepository.save(enrollment);
+
+        notificationService.notify(
+                student,
+                "You enrolled in \"" + course.getTitle() + "\". Start learning whenever you are ready.",
+                NotificationService.TYPE_ENROLLMENT
+        );
+        if (course.getTeacher() != null) {
+            notificationService.notify(
+                    course.getTeacher(),
+                    student.getName() + " enrolled in your course \"" + course.getTitle() + "\".",
+                    NotificationService.TYPE_ENROLLMENT
+            );
+        }
 
         return new EnrolledCourseDto(
                 enrollment.getId(),
@@ -166,6 +182,7 @@ public class EnrollmentService {
 
         if (progress.allLessonsCompleted() && progress.allQuizzesPassed()) {
             boolean changed = false;
+            boolean certificateCreated = false;
             if (!enrollment.isCompleted()) {
                 enrollment.setCompleted(true);
                 enrollment.setCompletedAt(LocalDateTime.now());
@@ -173,10 +190,18 @@ public class EnrollmentService {
             }
             if (enrollment.getCertificateCode() == null) {
                 enrollment.setCertificateCode(generateCertificateCode());
+                certificateCreated = true;
                 changed = true;
             }
             if (changed) {
                 enrollment = enrollmentRepository.save(enrollment);
+            }
+            if (certificateCreated) {
+                notificationService.notify(
+                        student,
+                        "Your certificate for \"" + course.getTitle() + "\" is ready to download.",
+                        NotificationService.TYPE_CERTIFICATE
+                );
             }
         }
 

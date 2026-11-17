@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { formatRole, initials } from '../api/helpers'
+import NotificationBell from './NotificationBell'
 
 const NAV_LINKS = {
   STUDENT: [
@@ -90,6 +91,8 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <NotificationBell />
+
           <div className="relative hidden sm:block">
             <button
               type="button"

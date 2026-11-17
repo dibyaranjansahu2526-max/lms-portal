@@ -34,17 +34,20 @@ public class QuizService {
     private final CourseService courseService;
     private final EnrollmentService enrollmentService;
     private final CurrentUserService currentUserService;
+    private final NotificationService notificationService;
 
     public QuizService(QuizRepository quizRepository,
                        QuizAttemptRepository quizAttemptRepository,
                        CourseService courseService,
                        EnrollmentService enrollmentService,
-                       CurrentUserService currentUserService) {
+                       CurrentUserService currentUserService,
+                       NotificationService notificationService) {
         this.quizRepository = quizRepository;
         this.quizAttemptRepository = quizAttemptRepository;
         this.courseService = courseService;
         this.enrollmentService = enrollmentService;
         this.currentUserService = currentUserService;
+        this.notificationService = notificationService;
     }
 
     @Transactional(readOnly = true)
@@ -153,6 +156,8 @@ public class QuizService {
         int totalQuestions = quiz.getQuestions().size();
         int score = totalQuestions == 0 ? 0 : (int) Math.round((correctAnswers * 100.0) / totalQuestions);
         boolean passed = score >= quiz.getPassingScore();
+        boolean alreadyPassed = quizAttemptRepository
+                .existsByStudentIdAndQuizIdAndPassedTrue(student.getId(), quizId);
 
         QuizAttempt attempt = new QuizAttempt();
         attempt.setStudent(student);
@@ -162,6 +167,15 @@ public class QuizService {
         attempt.setCorrectAnswers(correctAnswers);
         attempt.setTotalQuestions(totalQuestions);
         attempt = quizAttemptRepository.save(attempt);
+
+        if (passed && !alreadyPassed) {
+            notificationService.notify(
+                    student,
+                    "You passed the \"" + quiz.getTitle() + "\" quiz in \""
+                            + quiz.getCourse().getTitle() + "\" with " + score + "%.",
+                    NotificationService.TYPE_QUIZ_PASSED
+            );
+        }
 
         ProgressDto progress = enrollmentService.evaluateCompletion(student, quiz.getCourse());
 
