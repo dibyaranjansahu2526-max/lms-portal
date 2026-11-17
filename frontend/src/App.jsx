@@ -4,6 +4,7 @@ import { PageLoader } from './components/Loading'
 import ProtectedRoute from './components/ProtectedRoute'
 import { homeForRole } from './api/helpers'
 import { useAuth } from './context/AuthContext'
+import Profile from './pages/Profile'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
 import VerifyCertificate from './pages/public/VerifyCertificate'
@@ -65,6 +66,8 @@ export default function App() {
           </ProtectedRoute>
         }
       >
+        <Route path="/profile" element={<Profile />} />
+
         <Route
           path="/student/dashboard"
           element={

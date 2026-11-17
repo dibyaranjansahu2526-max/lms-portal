@@ -12,6 +12,7 @@ import {
   LibraryBig,
   LogOut,
   Menu,
+  UserRound,
   Users,
   X,
 } from 'lucide-react'
@@ -123,6 +124,13 @@ export default function Navbar() {
                   <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.name}</p>
                   <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
                 </div>
+                <Link
+                  to="/profile"
+                  className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+                >
+                  <UserRound className="h-4 w-4" />
+                  Profile
+                </Link>
                 <button
                   type="button"
                   onClick={handleLogout}
@@ -177,6 +185,13 @@ export default function Navbar() {
                 </NavLink>
               )
             })}
+            <Link
+              to="/profile"
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <UserRound className="h-4 w-4" />
+              Profile
+            </Link>
             <button
               type="button"
               onClick={handleLogout}

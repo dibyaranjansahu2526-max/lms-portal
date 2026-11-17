@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import api from '../api/client'
 
 const AuthContext = createContext(null)
@@ -84,9 +84,14 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const updateUser = useCallback((nextUser) => {
+    localStorage.setItem('lms_user', JSON.stringify(nextUser))
+    setUser(nextUser)
+  }, [])
+
   const value = useMemo(
-    () => ({ user, token, loading, login, register, logout, isAuthenticated: Boolean(user) }),
-    [user, token, loading],
+    () => ({ user, token, loading, login, register, logout, updateUser, isAuthenticated: Boolean(user) }),
+    [user, token, loading, updateUser],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
