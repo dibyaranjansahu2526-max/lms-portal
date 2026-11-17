@@ -77,7 +77,8 @@ public class ReviewService {
     @Transactional
     public ReviewDto update(Long courseId, ReviewRequest request, Authentication authentication) {
         User student = currentUserService.get(authentication);
-        requireCourse(courseId);
+        Course course = requireCourse(courseId);
+        requireEnrollment(student, course);
         Review review = reviewRepository.findByStudentIdAndCourseId(student.getId(), courseId)
                 .orElseThrow(() -> ApiException.notFound("You have not reviewed this course yet"));
 

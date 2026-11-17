@@ -202,6 +202,26 @@ class MockTestServiceTest {
     }
 
     @Test
+    void studentCannotReadAnotherStudentsAttempt() {
+        User otherStudent = new User();
+        otherStudent.setId(8L);
+        otherStudent.setName("Other Student");
+        otherStudent.setEmail("other@example.com");
+        otherStudent.setRole(Role.STUDENT);
+
+        MockAttempt attempt = attemptStartedMinutesAgo(1);
+        attempt.setStudent(otherStudent);
+        attempt.setStatus(MockAttempt.STATUS_SUBMITTED);
+        when(mockAttemptRepository.findById(ATTEMPT_ID)).thenReturn(Optional.of(attempt));
+
+        assertThatThrownBy(() -> mockTestService.result(ATTEMPT_ID, authentication))
+                .isInstanceOf(ApiException.class)
+                .hasMessageContaining("your own attempts")
+                .satisfies(error -> assertThat(((ApiException) error).getStatus())
+                        .isEqualTo(HttpStatus.FORBIDDEN));
+    }
+
+    @Test
     void submittingAnAlreadySubmittedAttemptReturnsTheStoredResultWithoutRescoring() {
         addQuestion(1L, 10L);
         MockAttempt attempt = attemptStartedMinutesAgo(2);

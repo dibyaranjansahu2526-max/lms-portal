@@ -173,10 +173,7 @@ public class MockTestService {
     @Transactional
     public MockStartDto startAttempt(Long testId, Authentication authentication) {
         User student = currentUserService.get(authentication);
-        MockTest test = findTest(testId);
-        if (!test.isPublished()) {
-            throw ApiException.notFound("Mock test not found");
-        }
+        MockTest test = requirePublishedTest(testId);
 
         LocalDateTime now = LocalDateTime.now();
         MockAttempt active = mockAttemptRepository
@@ -298,7 +295,7 @@ public class MockTestService {
     @Transactional(readOnly = true)
     public MockHistoryDto history(Long testId, Authentication authentication) {
         User student = currentUserService.get(authentication);
-        MockTest test = findTest(testId);
+        MockTest test = requirePublishedTest(testId);
         List<MockAttemptSummaryDto> attempts = mockAttemptRepository
                 .findByStudentIdAndMockTestIdAndSubmittedAtIsNotNullOrderBySubmittedAtDesc(student.getId(), testId)
                 .stream()
@@ -317,10 +314,7 @@ public class MockTestService {
     @Transactional(readOnly = true)
     public MockLeaderboardDto leaderboard(Long testId, Authentication authentication) {
         currentUserService.get(authentication);
-        MockTest test = findTest(testId);
-        if (!test.isPublished()) {
-            throw ApiException.notFound("Mock test not found");
-        }
+        MockTest test = requirePublishedTest(testId);
 
         Map<Long, MockAttempt> bestByStudent = new LinkedHashMap<>();
         for (MockAttempt attempt : mockAttemptRepository
@@ -365,6 +359,14 @@ public class MockTestService {
     private MockTest findTest(Long testId) {
         return mockTestRepository.findById(testId)
                 .orElseThrow(() -> ApiException.notFound("Mock test not found"));
+    }
+
+    private MockTest requirePublishedTest(Long testId) {
+        MockTest test = findTest(testId);
+        if (!test.isPublished()) {
+            throw ApiException.notFound("Mock test not found");
+        }
+        return test;
     }
 
     private MockAttempt requireOwnedAttempt(Long attemptId, User student) {
