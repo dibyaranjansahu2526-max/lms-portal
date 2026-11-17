@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
 import {
+  BarChart3,
   BookOpen,
   ChevronDown,
   ClipboardList,
@@ -28,6 +29,7 @@ const NAV_LINKS = {
   ],
   TEACHER: [
     { to: '/teacher/courses', label: 'My Courses', icon: LibraryBig },
+    { to: '/teacher/analytics', label: 'Analytics', icon: BarChart3 },
     { to: '/teacher/mock-tests', label: 'Mock Tests', icon: ClipboardList },
   ],
   ADMIN: [

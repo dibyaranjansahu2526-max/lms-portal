@@ -10,11 +10,13 @@ import com.lms.dto.MockTestDto;
 import com.lms.dto.MockTestRequest;
 import com.lms.dto.QuizDto;
 import com.lms.dto.QuizRequest;
+import com.lms.dto.TeacherCourseAnalyticsDto;
 import com.lms.service.CourseService;
 import com.lms.service.EnrollmentService;
 import com.lms.service.LessonService;
 import com.lms.service.MockTestService;
 import com.lms.service.QuizService;
+import com.lms.service.TeacherAnalyticsService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,17 +41,20 @@ public class TeacherController {
     private final QuizService quizService;
     private final EnrollmentService enrollmentService;
     private final MockTestService mockTestService;
+    private final TeacherAnalyticsService teacherAnalyticsService;
 
     public TeacherController(CourseService courseService,
                              LessonService lessonService,
                              QuizService quizService,
                              EnrollmentService enrollmentService,
-                             MockTestService mockTestService) {
+                             MockTestService mockTestService,
+                             TeacherAnalyticsService teacherAnalyticsService) {
         this.courseService = courseService;
         this.lessonService = lessonService;
         this.quizService = quizService;
         this.enrollmentService = enrollmentService;
         this.mockTestService = mockTestService;
+        this.teacherAnalyticsService = teacherAnalyticsService;
     }
 
     @GetMapping("/courses")
@@ -131,6 +136,11 @@ public class TeacherController {
     @GetMapping("/courses/{courseId}/students")
     public List<EnrolledStudentDto> students(@PathVariable Long courseId, Authentication authentication) {
         return enrollmentService.getEnrolledStudents(courseId, authentication);
+    }
+
+    @GetMapping("/analytics/courses")
+    public List<TeacherCourseAnalyticsDto> courseAnalytics(Authentication authentication) {
+        return teacherAnalyticsService.courseAnalytics(authentication);
     }
 
     @GetMapping("/mock-tests")

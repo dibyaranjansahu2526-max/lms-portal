@@ -24,6 +24,16 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     long countByCourseId(Long courseId);
 
+    @Query("""
+            select e.course.id as courseId,
+                   count(e) as enrollmentCount,
+                   sum(case when e.completed = true then 1 else 0 end) as completedCount
+            from Enrollment e
+            where e.course.teacher.id = :teacherId
+            group by e.course.id
+            """)
+    List<CourseEnrollmentStats> findCourseStatsByTeacherId(@Param("teacherId") Long teacherId);
+
     @Modifying
     @Query("delete from Enrollment e where e.course.id = :courseId")
     void deleteByCourseId(@Param("courseId") Long courseId);
@@ -31,4 +41,12 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
     @Modifying
     @Query("delete from Enrollment e where e.student.id = :studentId")
     void deleteByStudentId(@Param("studentId") Long studentId);
+
+    interface CourseEnrollmentStats {
+        Long getCourseId();
+
+        long getEnrollmentCount();
+
+        long getCompletedCount();
+    }
 }

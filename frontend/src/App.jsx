@@ -24,6 +24,7 @@ import AdminUsers from './pages/admin/AdminUsers'
 import CourseForm from './pages/teacher/CourseForm'
 import LessonManager from './pages/teacher/LessonManager'
 import QuizBuilder from './pages/teacher/QuizBuilder'
+import TeacherAnalytics from './pages/teacher/TeacherAnalytics'
 import TeacherCourses from './pages/teacher/TeacherCourses'
 import TeacherMockTestQuestions from './pages/teacher/TeacherMockTestQuestions'
 import TeacherMockTests from './pages/teacher/TeacherMockTests'
@@ -164,6 +165,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['TEACHER']}>
               <TeacherCourses />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/teacher/analytics"
+          element={
+            <ProtectedRoute roles={['TEACHER']}>
+              <TeacherAnalytics />
             </ProtectedRoute>
           }
         />
