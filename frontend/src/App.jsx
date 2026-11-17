@@ -6,6 +6,7 @@ import { homeForRole } from './api/helpers'
 import { useAuth } from './context/AuthContext'
 import Login from './pages/auth/Login'
 import Register from './pages/auth/Register'
+import VerifyCertificate from './pages/public/VerifyCertificate'
 import Catalog from './pages/student/Catalog'
 import CourseDetail from './pages/student/CourseDetail'
 import LearningPage from './pages/student/LearningPage'
@@ -55,6 +56,7 @@ export default function App() {
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/verify" element={<VerifyCertificate />} />
 
       <Route
         element={

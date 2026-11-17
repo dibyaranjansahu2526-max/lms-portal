@@ -1,5 +1,6 @@
 package com.lms.service;
 
+import com.lms.dto.CertificateVerificationDto;
 import com.lms.dto.ProgressDto;
 import com.lms.entity.Course;
 import com.lms.entity.Enrollment;
@@ -22,6 +23,7 @@ import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 @Service
 public class CertificateService {
@@ -63,6 +65,25 @@ public class CertificateService {
         byte[] pdf = renderPdf(student.getName(), course.getTitle(), completedAt, progress.certificateCode());
         String filename = "LMS-Certificate-" + courseId + ".pdf";
         return new CertificatePdf(pdf, filename);
+    }
+
+    @Transactional(readOnly = true)
+    public CertificateVerificationDto verify(String code) {
+        if (code == null || code.isBlank()) {
+            throw ApiException.notFound("Certificate not found");
+        }
+
+        String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
+        Enrollment enrollment = enrollmentRepository.findByCertificateCode(normalizedCode)
+                .filter(Enrollment::isCompleted)
+                .filter(certificate -> certificate.getCompletedAt() != null)
+                .orElseThrow(() -> ApiException.notFound("Certificate not found"));
+
+        return new CertificateVerificationDto(
+                enrollment.getStudent().getName(),
+                enrollment.getCourse().getTitle(),
+                enrollment.getCompletedAt().toLocalDate()
+        );
     }
 
     private byte[] renderPdf(String studentName, String courseName, LocalDateTime completedAt, String code) {

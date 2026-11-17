@@ -17,6 +17,9 @@ public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
 
     Optional<Enrollment> findByStudentIdAndCourseId(Long studentId, Long courseId);
 
+    @EntityGraph(attributePaths = {"student", "course"})
+    Optional<Enrollment> findByCertificateCode(String certificateCode);
+
     boolean existsByStudentIdAndCourseId(Long studentId, Long courseId);
 
     @EntityGraph(attributePaths = "student")
