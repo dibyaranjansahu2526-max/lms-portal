@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { BookOpenCheck, GraduationCap, ShieldCheck, Sparkles, UsersRound } from 'lucide-react'
+import ThemeToggle from './ThemeToggle'
 
 const features = [
   { icon: BookOpenCheck, text: 'Structured courses with lessons and quizzes' },
@@ -10,7 +11,10 @@ const features = [
 
 export default function AuthShell({ children }) {
   return (
-    <div className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-[1.05fr_1fr]">
+    <div className="relative min-h-screen bg-slate-50 dark:bg-slate-950 lg:grid lg:grid-cols-[1.05fr_1fr]">
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <ThemeToggle />
+      </div>
       <aside className="relative hidden overflow-hidden bg-slate-950 px-10 py-12 lg:flex lg:flex-col lg:justify-between xl:px-16">
         <div className="pointer-events-none absolute -right-28 -top-28 h-96 w-96 rounded-full bg-indigo-600/30 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-violet-600/20 blur-3xl" />
@@ -61,8 +65,8 @@ export default function AuthShell({ children }) {
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-md">
               <GraduationCap className="h-5 w-5" />
             </span>
-            <span className="text-xl font-extrabold tracking-tight text-slate-900">
-              LMS<span className="text-indigo-600">Portal</span>
+            <span className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+              LMS<span className="text-indigo-600 dark:text-indigo-400">Portal</span>
             </span>
           </Link>
           {children}

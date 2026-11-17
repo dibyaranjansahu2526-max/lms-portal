@@ -18,6 +18,7 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { formatRole, initials } from '../api/helpers'
 import NotificationBell from './NotificationBell'
+import ThemeToggle from './ThemeToggle'
 
 const NAV_LINKS = {
   STUDENT: [
@@ -59,13 +60,13 @@ export default function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl dark:border-slate-800/80 dark:bg-slate-900/90">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-200">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-200 dark:shadow-indigo-950/50">
             <GraduationCap className="h-5 w-5" />
           </span>
-          <span className="text-lg font-extrabold tracking-tight text-slate-900">
+          <span className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
             LMS<span className="text-indigo-600">Portal</span>
           </span>
         </Link>
@@ -80,8 +81,8 @@ export default function Navbar() {
                 className={({ isActive }) =>
                   `flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
                     isActive
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-slate-100'
                   }`
                 }
               >
@@ -93,38 +94,39 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <NotificationBell />
 
           <div className="relative hidden sm:block">
             <button
               type="button"
               onClick={() => setProfileOpen((open) => !open)}
-              className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition hover:bg-slate-100"
+              className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 text-left transition hover:bg-slate-100 dark:hover:bg-slate-800"
             >
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
                 {initials(user?.name)}
               </span>
               <span className="hidden lg:block">
-                <span className="block max-w-[150px] truncate text-sm font-semibold text-slate-800">
+                <span className="block max-w-[150px] truncate text-sm font-semibold text-slate-800 dark:text-slate-100">
                   {user?.name}
                 </span>
-                <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400">
+                <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
                   {formatRole(user?.role)}
                 </span>
               </span>
-              <ChevronDown className="h-4 w-4 text-slate-400" />
+              <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500" />
             </button>
 
             {profileOpen && (
-              <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
-                <div className="border-b border-slate-100 px-3 py-2.5">
-                  <p className="truncate text-sm font-semibold text-slate-800">{user?.name}</p>
-                  <p className="truncate text-xs text-slate-500">{user?.email}</p>
+              <div className="absolute right-0 mt-2 w-60 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                <div className="border-b border-slate-100 px-3 py-2.5 dark:border-slate-800">
+                  <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.name}</p>
+                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">{user?.email}</p>
                 </div>
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+                  className="mt-1 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
                 >
                   <LogOut className="h-4 w-4" />
                   Sign out
@@ -136,7 +138,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMobileOpen((open) => !open)}
-            className="rounded-xl p-2 text-slate-600 hover:bg-slate-100 md:hidden"
+            className="rounded-xl p-2 text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 md:hidden"
             aria-label="Toggle navigation"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -145,14 +147,14 @@ export default function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="border-t border-slate-200 bg-white px-4 py-4 md:hidden">
-          <div className="mb-3 flex items-center gap-3 rounded-xl bg-slate-50 p-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700">
+        <div className="border-t border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-900 md:hidden">
+          <div className="mb-3 flex items-center gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-sm font-bold text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300">
               {initials(user?.name)}
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-800">{user?.name}</p>
-              <p className="truncate text-xs text-slate-500">{formatRole(user?.role)}</p>
+              <p className="truncate text-sm font-semibold text-slate-800 dark:text-slate-100">{user?.name}</p>
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">{formatRole(user?.role)}</p>
             </div>
           </div>
           <nav className="space-y-1">
@@ -164,7 +166,9 @@ export default function Navbar() {
                   to={link.to}
                   className={({ isActive }) =>
                     `flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold ${
-                      isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100'
+                      isActive
+                        ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300'
+                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
                     }`
                   }
                 >
@@ -176,7 +180,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50"
+              className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
             >
               <LogOut className="h-4 w-4" />
               Sign out
