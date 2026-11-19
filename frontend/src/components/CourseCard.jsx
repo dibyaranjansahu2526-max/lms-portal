@@ -1,12 +1,15 @@
-import { BookOpen, CheckCircle2, ClipboardList, Heart, Star, Users } from 'lucide-react'
+import { BookOpen, CheckCircle2, ClipboardList, CreditCard, Heart, Star, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { formatPrice } from '../api/helpers'
 import { ButtonLoader } from './Loading'
 
 export default function CourseCard({
   course,
   enrolled = false,
   enrolling = false,
+  purchasing = false,
   onEnroll,
+  onBuy,
   wishlisted = false,
   onToggleWishlist,
 }) {
@@ -14,6 +17,14 @@ export default function CourseCard({
   const detailTo = `/student/courses/${course.id}`
   const averageRating = Number(course.averageRating) || 0
   const reviewCount = Number(course.reviewCount) || 0
+  const price = Number(course.price) || 0
+  const paid = price > 0
+  const busy = enrolled || enrolling || purchasing
+
+  const handleAction = () => {
+    const action = paid ? onBuy : onEnroll
+    action?.(course)
+  }
 
   return (
     <article className="card card-hover flex h-full flex-col overflow-hidden">
@@ -71,6 +82,19 @@ export default function CourseCard({
         </div>
         <p className="mt-2 line-clamp-3 flex-1 text-sm leading-relaxed text-slate-500">{course.description}</p>
 
+        <div className="mt-3 flex items-center justify-between gap-3">
+          <span
+            className={`text-lg font-extrabold tracking-tight ${
+              paid ? 'text-slate-900 dark:text-slate-100' : 'text-emerald-600 dark:text-emerald-400'
+            }`}
+          >
+            {formatPrice(price)}
+          </span>
+          <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+            {paid ? 'One-time payment' : 'Free access'}
+          </span>
+        </div>
+
         <div className="mt-4 flex items-center gap-4 text-xs font-medium text-slate-400">
           <span className="flex items-center gap-1.5">
             <BookOpen className="h-3.5 w-3.5" />
@@ -88,15 +112,21 @@ export default function CourseCard({
 
         <button
           type="button"
-          disabled={enrolled || enrolling}
-          onClick={() => onEnroll?.(course)}
+          disabled={busy}
+          onClick={handleAction}
           className={`mt-5 w-full ${enrolled ? 'btn-secondary' : 'btn-primary'}`}
         >
-          {enrolling ? (
-            <ButtonLoader label="Enrolling..." />
-          ) : enrolled ? (
+          {enrolled ? (
             <>
               <CheckCircle2 className="h-4 w-4" /> Already enrolled
+            </>
+          ) : purchasing ? (
+            <ButtonLoader label="Opening checkout..." />
+          ) : enrolling ? (
+            <ButtonLoader label="Enrolling..." />
+          ) : paid ? (
+            <>
+              <CreditCard className="h-4 w-4" /> Buy now
             </>
           ) : (
             'Enroll now'

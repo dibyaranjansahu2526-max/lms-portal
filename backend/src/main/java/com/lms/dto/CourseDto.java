@@ -8,6 +8,7 @@ public record CourseDto(
         String description,
         String category,
         String imageUrl,
+        long price,
         boolean published,
         Long teacherId,
         String teacherName,

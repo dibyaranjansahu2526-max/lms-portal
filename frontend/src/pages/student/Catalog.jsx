@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { BookOpen, ChevronLeft, ChevronRight, Compass, Search, Sparkles } from 'lucide-react'
 import api, { getErrorMessage } from '../../api/client'
+import { buyCourse } from '../../api/payments'
 import CourseCard from '../../components/CourseCard'
 import { EmptyState, ErrorAlert, SuccessAlert } from '../../components/Feedback'
 import { SkeletonCard } from '../../components/Loading'
@@ -39,6 +40,24 @@ export default function Catalog() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [enrollingId, setEnrollingId] = useState(null)
+  const [purchasingId, setPurchasingId] = useState(null)
+
+  const refreshEnrollments = async () => {
+    try {
+      const { data } = await api.get('/student/courses')
+      setEnrolledIds(new Set(data.map((enrollment) => enrollment.course.id)))
+      const counts = new Map(
+        data.map((enrollment) => [enrollment.course.id, enrollment.course.enrollmentCount]),
+      )
+      setCourses((current) =>
+        current.map((item) =>
+          counts.has(item.id) ? { ...item, enrollmentCount: counts.get(item.id) } : item,
+        ),
+      )
+    } catch {
+      // The payment already succeeded; keep the optimistic enrollment state if refresh fails.
+    }
+  }
 
   useEffect(() => {
     api
@@ -112,6 +131,33 @@ export default function Catalog() {
       setError(getErrorMessage(err, 'Could not enroll in this course.'))
     } finally {
       setEnrollingId(null)
+    }
+  }
+
+  const handleBuy = async (course) => {
+    setPurchasingId(course.id)
+    setError('')
+    setSuccess('')
+    try {
+      await buyCourse(course, user)
+      setEnrolledIds((current) => new Set([...current, course.id]))
+      setCourses((current) =>
+        current.map((item) =>
+          item.id === course.id
+            ? { ...item, enrollmentCount: (item.enrollmentCount || 0) + 1 }
+            : item,
+        ),
+      )
+      setSuccess(`Payment successful! You are now enrolled in "${course.title}". Head to My Courses to start learning.`)
+      await refreshEnrollments()
+    } catch (err) {
+      setError(
+        err?.cancelled
+          ? err.message
+          : getErrorMessage(err, 'Payment could not be completed. Please try again.'),
+      )
+    } finally {
+      setPurchasingId(null)
     }
   }
 
@@ -265,7 +311,9 @@ export default function Catalog() {
               course={course}
               enrolled={enrolledIds.has(course.id)}
               enrolling={enrollingId === course.id}
+              purchasing={purchasingId === course.id}
               onEnroll={handleEnroll}
+              onBuy={handleBuy}
               wishlisted={wishlistedIds.has(course.id)}
               onToggleWishlist={handleToggleWishlist}
             />

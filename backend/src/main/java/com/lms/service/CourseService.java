@@ -11,6 +11,7 @@ import com.lms.repository.CourseRepository;
 import com.lms.repository.EnrollmentRepository;
 import com.lms.repository.LessonProgressRepository;
 import com.lms.repository.LessonRepository;
+import com.lms.repository.PaymentRepository;
 import com.lms.repository.QuizAttemptRepository;
 import com.lms.repository.QuizRepository;
 import com.lms.repository.ReviewRepository;
@@ -33,6 +34,7 @@ public class CourseService {
     private final QuizAttemptRepository quizAttemptRepository;
     private final ReviewRepository reviewRepository;
     private final WishlistRepository wishlistRepository;
+    private final PaymentRepository paymentRepository;
     private final CurrentUserService currentUserService;
 
     public CourseService(CourseRepository courseRepository,
@@ -43,6 +45,7 @@ public class CourseService {
                          QuizAttemptRepository quizAttemptRepository,
                          ReviewRepository reviewRepository,
                          WishlistRepository wishlistRepository,
+                         PaymentRepository paymentRepository,
                          CurrentUserService currentUserService) {
         this.courseRepository = courseRepository;
         this.lessonRepository = lessonRepository;
@@ -52,6 +55,7 @@ public class CourseService {
         this.quizAttemptRepository = quizAttemptRepository;
         this.reviewRepository = reviewRepository;
         this.wishlistRepository = wishlistRepository;
+        this.paymentRepository = paymentRepository;
         this.currentUserService = currentUserService;
     }
 
@@ -173,6 +177,7 @@ public class CourseService {
                 course.getDescription(),
                 course.getCategory(),
                 course.getImageUrl(),
+                course.getPrice(),
                 course.isPublished(),
                 course.getTeacher().getId(),
                 course.getTeacher().getName(),
@@ -190,6 +195,9 @@ public class CourseService {
         course.setDescription(request.description().trim());
         course.setCategory(blankToNull(request.category()));
         course.setImageUrl(blankToNull(request.imageUrl()));
+        if (request.price() != null) {
+            course.setPrice(request.price());
+        }
         course.setPublished(request.published());
     }
 
@@ -198,6 +206,7 @@ public class CourseService {
         lessonProgressRepository.deleteByCourseId(courseId);
         wishlistRepository.deleteByCourseId(courseId);
         reviewRepository.deleteByCourseId(courseId);
+        paymentRepository.deleteByCourseId(courseId);
         enrollmentRepository.deleteByCourseId(courseId);
         courseRepository.deleteById(courseId);
     }

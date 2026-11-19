@@ -69,35 +69,22 @@ public class EnrollmentService {
         if (!course.isPublished()) {
             throw ApiException.badRequest("This course is not open for enrollment");
         }
+        if (course.getPrice() > 0) {
+            throw ApiException.badRequest("This course requires payment. Complete checkout before enrolling.");
+        }
         if (enrollmentRepository.existsByStudentIdAndCourseId(student.getId(), courseId)) {
             throw ApiException.conflict("You are already enrolled in this course");
         }
 
-        Enrollment enrollment = new Enrollment();
-        enrollment.setStudent(student);
-        enrollment.setCourse(course);
-        enrollment.setCompleted(false);
-        enrollment = enrollmentRepository.save(enrollment);
+        Enrollment enrollment = createEnrollment(student, course);
+        return enrolledCourseDto(enrollment, student, course);
+    }
 
-        notificationService.notify(
-                student,
-                "You enrolled in \"" + course.getTitle() + "\". Start learning whenever you are ready.",
-                NotificationService.TYPE_ENROLLMENT
-        );
-        if (course.getTeacher() != null) {
-            notificationService.notify(
-                    course.getTeacher(),
-                    student.getName() + " enrolled in your course \"" + course.getTitle() + "\".",
-                    NotificationService.TYPE_ENROLLMENT
-            );
-        }
-
-        return new EnrolledCourseDto(
-                enrollment.getId(),
-                courseService.toDto(course),
-                enrollment.getEnrolledAt(),
-                calculateProgress(student, course, enrollment)
-        );
+    @Transactional
+    public EnrolledCourseDto enrollAfterPayment(Course course, User student) {
+        Enrollment enrollment = enrollmentRepository.findByStudentIdAndCourseId(student.getId(), course.getId())
+                .orElseGet(() -> createEnrollment(student, course));
+        return enrolledCourseDto(enrollment, student, course);
     }
 
     @Transactional
@@ -278,6 +265,37 @@ public class EnrollmentService {
                 enrollment.isCompleted(),
                 enrollment.getCertificateCode(),
                 enrollment.getCompletedAt()
+        );
+    }
+
+    private Enrollment createEnrollment(User student, Course course) {
+        Enrollment enrollment = new Enrollment();
+        enrollment.setStudent(student);
+        enrollment.setCourse(course);
+        enrollment.setCompleted(false);
+        enrollment = enrollmentRepository.save(enrollment);
+
+        notificationService.notify(
+                student,
+                "You enrolled in \"" + course.getTitle() + "\". Start learning whenever you are ready.",
+                NotificationService.TYPE_ENROLLMENT
+        );
+        if (course.getTeacher() != null) {
+            notificationService.notify(
+                    course.getTeacher(),
+                    student.getName() + " enrolled in your course \"" + course.getTitle() + "\".",
+                    NotificationService.TYPE_ENROLLMENT
+            );
+        }
+        return enrollment;
+    }
+
+    private EnrolledCourseDto enrolledCourseDto(Enrollment enrollment, User student, Course course) {
+        return new EnrolledCourseDto(
+                enrollment.getId(),
+                courseService.toDto(course),
+                enrollment.getEnrolledAt(),
+                calculateProgress(student, course, enrollment)
         );
     }
 

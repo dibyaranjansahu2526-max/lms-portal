@@ -15,6 +15,7 @@ import com.lms.repository.LessonProgressRepository;
 import com.lms.repository.LessonRepository;
 import com.lms.repository.MockAttemptRepository;
 import com.lms.repository.MockTestRepository;
+import com.lms.repository.PaymentRepository;
 import com.lms.repository.QuizAttemptRepository;
 import com.lms.repository.QuizRepository;
 import com.lms.repository.ReviewRepository;
@@ -41,6 +42,7 @@ public class AdminService {
     private final WishlistRepository wishlistRepository;
     private final MockTestRepository mockTestRepository;
     private final MockAttemptRepository mockAttemptRepository;
+    private final PaymentRepository paymentRepository;
     private final CourseService courseService;
     private final CurrentUserService currentUserService;
 
@@ -55,6 +57,7 @@ public class AdminService {
                         WishlistRepository wishlistRepository,
                         MockTestRepository mockTestRepository,
                         MockAttemptRepository mockAttemptRepository,
+                        PaymentRepository paymentRepository,
                         CourseService courseService,
                         CurrentUserService currentUserService) {
         this.userRepository = userRepository;
@@ -68,6 +71,7 @@ public class AdminService {
         this.wishlistRepository = wishlistRepository;
         this.mockTestRepository = mockTestRepository;
         this.mockAttemptRepository = mockAttemptRepository;
+        this.paymentRepository = paymentRepository;
         this.courseService = courseService;
         this.currentUserService = currentUserService;
     }
@@ -127,6 +131,7 @@ public class AdminService {
         wishlistRepository.deleteByStudentId(target.getId());
         lessonProgressRepository.deleteByStudentId(target.getId());
         quizAttemptRepository.deleteByStudentId(target.getId());
+        paymentRepository.deleteByStudentId(target.getId());
         enrollmentRepository.deleteByStudentId(target.getId());
         userRepository.delete(target);
     }

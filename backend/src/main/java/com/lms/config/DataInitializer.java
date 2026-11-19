@@ -29,10 +29,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 @Component
 public class DataInitializer implements CommandLineRunner {
+
+    private static final Map<String, Long> SEED_COURSE_PRICES = Map.of(
+            "Java Spring Boot Masterclass", 999L,
+            "Full-Stack Web Development with MERN", 999L,
+            "Python Programming Foundations", 499L
+    );
 
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
@@ -228,8 +235,9 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private Course ensureCourse(String title, Supplier<Course> factory) {
-        return courseRepository.findByTitleIgnoreCase(title)
+        Course course = courseRepository.findByTitleIgnoreCase(title)
                 .orElseGet(() -> courseRepository.save(factory.get()));
+        return applySeedPrice(course);
     }
 
     private void ensureEnrollment(User student, Course course) {
@@ -259,11 +267,14 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void seedAdditionalCourse(CourseSeedCatalog.CourseSeed seed, User teacher) {
-        if (courseRepository.findByTitleIgnoreCase(seed.title()).isPresent()) {
+        var existingCourse = courseRepository.findByTitleIgnoreCase(seed.title());
+        if (existingCourse.isPresent()) {
+            applySeedPrice(existingCourse.get());
             return;
         }
 
         Course course = baseCourse(seed.title(), seed.description(), seed.category(), seed.imageUrl(), teacher);
+        course.setPrice(seedPrice(seed.title()));
         course.setCreatedAt(LocalDateTime.now().minusDays(5));
 
         int lessonOrder = 1;
@@ -277,6 +288,19 @@ public class DataInitializer implements CommandLineRunner {
         addQuiz(course, seed.quizTitle(), seed.quizDescription(), 60, quizQuestions);
 
         courseRepository.save(course);
+    }
+
+    private Course applySeedPrice(Course course) {
+        long price = seedPrice(course.getTitle());
+        if (price > 0 && course.getPrice() == 0) {
+            course.setPrice(price);
+            return courseRepository.save(course);
+        }
+        return course;
+    }
+
+    private long seedPrice(String title) {
+        return SEED_COURSE_PRICES.getOrDefault(title, 0L);
     }
 
     private User ensureUser(String name, String email, String password, Role role) {

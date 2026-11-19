@@ -1,6 +1,7 @@
 package com.lms.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 
 public record CourseRequest(
@@ -17,6 +18,9 @@ public record CourseRequest(
 
         @Size(max = 500, message = "Image URL must be at most 500 characters")
         String imageUrl,
+
+        @PositiveOrZero(message = "Price cannot be negative")
+        Long price,
 
         boolean published
 ) {

@@ -2,18 +2,22 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Compass, Heart } from 'lucide-react'
 import api, { getErrorMessage } from '../../api/client'
+import { buyCourse } from '../../api/payments'
 import CourseCard from '../../components/CourseCard'
 import { EmptyState, ErrorAlert, SuccessAlert } from '../../components/Feedback'
 import { PageLoader } from '../../components/Loading'
 import PageHeader from '../../components/PageHeader'
+import { useAuth } from '../../context/AuthContext'
 
 export default function Wishlist() {
+  const { user } = useAuth()
   const [items, setItems] = useState([])
   const [enrolledIds, setEnrolledIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [enrollingId, setEnrollingId] = useState(null)
+  const [purchasingId, setPurchasingId] = useState(null)
 
   useEffect(() => {
     let active = true
@@ -36,6 +40,25 @@ export default function Wishlist() {
       active = false
     }
   }, [])
+
+  const handleBuy = async (course) => {
+    setPurchasingId(course.id)
+    setError('')
+    setSuccess('')
+    try {
+      await buyCourse(course, user)
+      setEnrolledIds((current) => new Set([...current, course.id]))
+      setSuccess(`Payment successful! You are now enrolled in "${course.title}". Head to My Courses to start learning.`)
+    } catch (err) {
+      setError(
+        err?.cancelled
+          ? err.message
+          : getErrorMessage(err, 'Payment could not be completed. Please try again.'),
+      )
+    } finally {
+      setPurchasingId(null)
+    }
+  }
 
   const handleToggleWishlist = async (course) => {
     setError('')

@@ -6,20 +6,24 @@ import {
   BookOpen,
   CheckCircle2,
   ClipboardList,
+  CreditCard,
   Heart,
   MessageSquare,
   PlayCircle,
   Users,
 } from 'lucide-react'
 import api, { getErrorMessage } from '../../api/client'
+import { buyCourse } from '../../api/payments'
 import { ErrorAlert, SuccessAlert } from '../../components/Feedback'
 import { ButtonLoader, PageLoader } from '../../components/Loading'
 import ProgressBar from '../../components/ProgressBar'
 import RatingStars from '../../components/RatingStars'
-import { formatDate, initials } from '../../api/helpers'
+import { formatDate, formatPrice, initials } from '../../api/helpers'
+import { useAuth } from '../../context/AuthContext'
 
 export default function CourseDetail() {
   const { courseId } = useParams()
+  const { user } = useAuth()
   const [course, setCourse] = useState(null)
   const [reviews, setReviews] = useState(null)
   const [enrollments, setEnrollments] = useState([])
@@ -28,6 +32,7 @@ export default function CourseDetail() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [enrolling, setEnrolling] = useState(false)
+  const [purchasing, setPurchasing] = useState(false)
   const [savingReview, setSavingReview] = useState(false)
   const [formRating, setFormRating] = useState(0)
   const [formComment, setFormComment] = useState('')
@@ -71,6 +76,8 @@ export default function CourseDetail() {
   const myReview = reviews?.myReview || null
   const averageRating = reviews?.averageRating ?? course?.averageRating ?? 0
   const reviewCount = reviews?.reviewCount ?? course?.reviewCount ?? 0
+  const price = Number(course?.price) || 0
+  const paid = price > 0
 
   const handleEnroll = async () => {
     setEnrolling(true)
@@ -87,6 +94,54 @@ export default function CourseDetail() {
       setError(getErrorMessage(err, 'Could not enroll in this course.'))
     } finally {
       setEnrolling(false)
+    }
+  }
+
+  const handleBuy = async () => {
+    setPurchasing(true)
+    setError('')
+    setSuccess('')
+    try {
+      const { verification } = await buyCourse(course, user)
+      setEnrollments((current) => {
+        if (current.some((item) => item.course.id === course.id)) return current
+        return [
+          {
+            enrollmentId: verification?.enrollmentId,
+            course,
+            enrolledAt: new Date().toISOString(),
+            progress: {
+              percentage: 0,
+              completedLessons: 0,
+              totalLessons: course.lessonCount,
+              passedQuizzes: 0,
+              totalQuizzes: course.quizCount,
+              completed: false,
+              certificateCode: null,
+            },
+          },
+          ...current,
+        ]
+      })
+      setCourse((current) =>
+        current ? { ...current, enrollmentCount: (current.enrollmentCount || 0) + 1 } : current,
+      )
+      setSuccess('Payment successful! You are now enrolled. Continue below to start the course.')
+
+      try {
+        const { data } = await api.get('/student/courses')
+        setEnrollments(data)
+      } catch {
+        // Keep the optimistic enrollment state if the refresh fails.
+      }
+    } catch (err) {
+      setError(
+        err?.cancelled
+          ? err.message
+          : getErrorMessage(err, 'Payment could not be completed. Please try again.'),
+      )
+    } finally {
+      setPurchasing(false)
     }
   }
 
@@ -189,6 +244,19 @@ export default function CourseDetail() {
             </h1>
             <p className="mt-1 text-sm text-slate-500">Taught by {course.teacherName}</p>
 
+            <div className="mt-4 flex flex-wrap items-end gap-x-3 gap-y-1">
+              <p
+                className={`text-3xl font-extrabold tracking-tight ${
+                  paid ? 'text-slate-900 dark:text-slate-100' : 'text-emerald-600 dark:text-emerald-400'
+                }`}
+              >
+                {formatPrice(price)}
+              </p>
+              <p className="pb-1 text-xs font-medium text-slate-400">
+                {paid ? 'One-time payment · lifetime access' : 'Free course'}
+              </p>
+            </div>
+
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <RatingStars value={averageRating} size="h-4 w-4" />
               <span className="text-sm font-bold text-slate-800">{averageRating.toFixed(1)}</span>
@@ -221,6 +289,16 @@ export default function CourseDetail() {
                 <Link to={`/student/courses/${course.id}/learn`} className="btn-primary">
                   <PlayCircle className="h-4 w-4" /> Continue learning
                 </Link>
+              ) : paid ? (
+                <button type="button" onClick={handleBuy} disabled={purchasing} className="btn-primary">
+                  {purchasing ? (
+                    <ButtonLoader label="Opening checkout..." />
+                  ) : (
+                    <>
+                      <CreditCard className="h-4 w-4" /> Buy now
+                    </>
+                  )}
+                </button>
               ) : (
                 <button type="button" onClick={handleEnroll} disabled={enrolling} className="btn-primary">
                   {enrolling ? <ButtonLoader label="Enrolling..." /> : 'Enroll now'}
@@ -231,6 +309,11 @@ export default function CourseDetail() {
                 {wishlisted ? 'Saved to wishlist' : 'Save to wishlist'}
               </button>
             </div>
+            {!enrolled && paid && (
+              <p className="mt-3 text-xs leading-relaxed text-slate-400">
+                Secure checkout powered by Razorpay. You will be enrolled automatically after payment.
+              </p>
+            )}
             {enrolled && enrollment?.progress.completed && (
               <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
                 <Award className="h-4 w-4" /> Course completed — your certificate is ready in My Courses.

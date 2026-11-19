@@ -32,6 +32,27 @@ export function formatRole(role) {
   return role ? role.charAt(0) + role.slice(1).toLowerCase() : ''
 }
 
+export function formatCurrency(value, currency = 'INR') {
+  const number = Number(value)
+  if (!Number.isFinite(number)) return '—'
+  try {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(number)
+  } catch {
+    return `${currency} ${number.toFixed(0)}`
+  }
+}
+
+export function formatPrice(value) {
+  const number = Number(value)
+  if (!Number.isFinite(number) || number <= 0) return 'Free'
+  return formatCurrency(number)
+}
+
 export function initials(name = '') {
   return name
     .split(' ')

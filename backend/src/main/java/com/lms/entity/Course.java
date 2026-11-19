@@ -38,6 +38,9 @@ public class Course {
     private String imageUrl;
 
     @Column(nullable = false)
+    private long price = 0L;
+
+    @Column(nullable = false)
     private boolean published;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -101,6 +104,14 @@ public class Course {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public long getPrice() {
+        return price;
+    }
+
+    public void setPrice(long price) {
+        this.price = price;
     }
 
     public boolean isPublished() {
