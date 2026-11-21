@@ -46,6 +46,17 @@ class RazorpaySignatureVerifierTest {
     }
 
     @Test
+    void rejectsSignatureWhenSecretIsAnUnresolvedPlaceholder() throws Exception {
+        String secret = generatedSecret();
+        RazorpaySignatureVerifier verifier =
+                new RazorpaySignatureVerifier("${" + "RAZORPAY_KEY_SECRET" + ":x");
+        String orderId = "order_" + UUID.randomUUID();
+        String paymentId = "pay_" + UUID.randomUUID();
+
+        assertThat(verifier.isValid(orderId, paymentId, sign(secret, orderId + "|" + paymentId))).isFalse();
+    }
+
+    @Test
     void acceptsUppercaseSignature() throws Exception {
         String secret = generatedSecret();
         RazorpaySignatureVerifier verifier = new RazorpaySignatureVerifier(secret);

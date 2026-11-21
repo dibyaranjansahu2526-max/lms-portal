@@ -1,6 +1,7 @@
 package com.lms.controller;
 
 import com.lms.dto.CreatePaymentOrderRequest;
+import com.lms.dto.PaymentDto;
 import com.lms.dto.PaymentOrderDto;
 import com.lms.dto.PaymentVerificationDto;
 import com.lms.dto.VerifyPaymentRequest;
@@ -8,10 +9,13 @@ import com.lms.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/student/payments")
@@ -22,6 +26,11 @@ public class PaymentController {
 
     public PaymentController(PaymentService paymentService) {
         this.paymentService = paymentService;
+    }
+
+    @GetMapping
+    public List<PaymentDto> listPayments(Authentication authentication) {
+        return paymentService.getPayments(authentication);
     }
 
     @PostMapping("/create-order")

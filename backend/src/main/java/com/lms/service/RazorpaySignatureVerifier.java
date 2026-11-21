@@ -26,7 +26,8 @@ public class RazorpaySignatureVerifier {
         if (isBlank(razorpayOrderId)
                 || isBlank(razorpayPaymentId)
                 || isBlank(razorpaySignature)
-                || isBlank(keySecret)) {
+                || isBlank(keySecret)
+                || keySecret.contains("${") || keySecret.contains("}")) {
             return false;
         }
 

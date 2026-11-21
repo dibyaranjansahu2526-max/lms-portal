@@ -20,7 +20,7 @@ A complete Learning Management System with a Spring Boot REST API and a React fr
 - View and delete courses
 
 ### Teacher
-- Create, edit, publish/unpublish and delete their own courses
+- Create, edit, publish/unpublish and delete their own courses, including setting a price (0 = free)
 - Manage lessons (title, text, YouTube URL, material URL, order)
 - Build quizzes with multiple options and one correct answer per question
 - View enrolled students, their progress, and completion status
@@ -31,7 +31,8 @@ A complete Learning Management System with a Spring Boot REST API and a React fr
 - Get recommendations from enrolled categories, with a popular-course fallback
 - Browse published courses, filter by search text or category, and sort by newest, highest rated or most popular
 - Save courses to a wishlist with the heart button on any course card
-- Enroll in courses and view them under **My Courses**
+- Enroll in courses (free) or buy paid courses with Razorpay checkout, then view them under **My Courses**
+- Review all paid orders and their verification status under **My Payments**
 - Read lessons, watch embedded YouTube videos, open lesson materials
 - Mark lessons complete and track progress
 - Take quizzes scored on the server (correct answers are never sent to the browser)
@@ -226,7 +227,8 @@ The login screen also has **Student / Teacher / Admin** demo buttons that fill i
 - Additional courses include Python, JavaScript, MERN, responsive design, operating systems, networking, Pandas, analytics SQL, machine learning, generative AI, MySQL, database design, AWS, Docker/Kubernetes, Android, Flutter, cybersecurity, ethical hacking, workplace communication and interview preparation
 - Sample enrollments and progress so **My Courses** and the admin/teacher dashboards are populated immediately
 - Three idempotent sample reviews: Aarav on Java Spring Boot Masterclass (5), Sofia on Modern React & Tailwind CSS (5), and Aarav on Data Structures Essentials (4)
-- Existing records are preserved, and duplicate titles, enrollments and reviews are skipped on restart
+- Pricing: 7 beginner courses are free and the other 16 are paid (about 70%); paid courses range from 399 to 1499 INR
+- Existing records are preserved, and duplicate titles, enrollments and reviews are skipped on restart; course prices are re-synced from the seed catalog by title on every startup
 
 ## Main API endpoints
 
@@ -326,6 +328,6 @@ The production bundle is written to `frontend/dist`. Serve it with any static we
 ## Security notes
 
 - Change `JWT_SECRET` and the seeded account passwords before deploying.
-- No database password is committed to the project; provide it through `DB_PASSWORD` and use a dedicated database user in production.
+- No database password or Razorpay key is committed to the project; provide them through `DB_PASSWORD`, `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET`. If keys were ever committed, rotate them before deploying.
 - Passwords are stored as BCrypt hashes.
 - Quiz correct answers are validated only on the server.

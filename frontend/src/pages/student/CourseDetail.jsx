@@ -131,8 +131,13 @@ export default function CourseDetail() {
       try {
         const { data } = await api.get('/student/courses')
         setEnrollments(data)
-      } catch {
-        // Keep the optimistic enrollment state if the refresh fails.
+      } catch (err) {
+        setError(
+          getErrorMessage(
+            err,
+            'Payment succeeded, but your enrollment could not be refreshed. Reload the page to see the course.',
+          ),
+        )
       }
     } catch (err) {
       setError(
@@ -253,7 +258,7 @@ export default function CourseDetail() {
                 {formatPrice(price)}
               </p>
               <p className="pb-1 text-xs font-medium text-slate-400">
-                {paid ? 'One-time payment · lifetime access' : 'Free course'}
+                {paid ? 'One-time payment Â· lifetime access' : 'Free course'}
               </p>
             </div>
 
@@ -316,7 +321,7 @@ export default function CourseDetail() {
             )}
             {enrolled && enrollment?.progress.completed && (
               <p className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
-                <Award className="h-4 w-4" /> Course completed — your certificate is ready in My Courses.
+                <Award className="h-4 w-4" /> Course completed â€” your certificate is ready in My Courses.
               </p>
             )}
           </div>

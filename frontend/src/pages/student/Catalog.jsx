@@ -54,8 +54,8 @@ export default function Catalog() {
           counts.has(item.id) ? { ...item, enrollmentCount: counts.get(item.id) } : item,
         ),
       )
-    } catch {
-      // The payment already succeeded; keep the optimistic enrollment state if refresh fails.
+    } catch (err) {
+      setError(getErrorMessage(err, 'Payment succeeded, but your enrollment could not be refreshed. Please reload the page.'))
     }
   }
 

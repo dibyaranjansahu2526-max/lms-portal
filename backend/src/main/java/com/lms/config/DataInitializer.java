@@ -35,10 +35,35 @@ import java.util.function.Supplier;
 @Component
 public class DataInitializer implements CommandLineRunner {
 
-    private static final Map<String, Long> SEED_COURSE_PRICES = Map.of(
-            "Java Spring Boot Masterclass", 999L,
-            "Full-Stack Web Development with MERN", 999L,
-            "Python Programming Foundations", 499L
+    /*
+     * Seven beginner courses stay free; the other 16 of 23 courses (~70%) are paid.
+     * Prices are in INR: beginner 299-499, intermediate 599-999, advanced 1299-1999.
+     * Seed prices are reapplied on every startup so existing courses are kept in sync.
+     */
+    private static final Map<String, Long> SEED_COURSE_PRICES = Map.ofEntries(
+            Map.entry("Java Spring Boot Masterclass", 1499L),
+            Map.entry("Modern React & Tailwind CSS", 799L),
+            Map.entry("Data Structures Essentials", 699L),
+            Map.entry("Python Programming Foundations", 0L),
+            Map.entry("Modern JavaScript Essentials", 399L),
+            Map.entry("Full-Stack Web Development with MERN", 999L),
+            Map.entry("Responsive Web Design with HTML & CSS", 0L),
+            Map.entry("Operating Systems Fundamentals", 449L),
+            Map.entry("Computer Networks Essentials", 699L),
+            Map.entry("Data Analysis with Pandas & NumPy", 0L),
+            Map.entry("SQL for Data Analytics", 499L),
+            Map.entry("Machine Learning Foundations", 899L),
+            Map.entry("Generative AI & Prompt Engineering", 999L),
+            Map.entry("MySQL Database Administration", 799L),
+            Map.entry("Database Design & Normalization", 0L),
+            Map.entry("AWS Cloud Practitioner Essentials", 0L),
+            Map.entry("Docker & Kubernetes in Practice", 1299L),
+            Map.entry("Android Development with Kotlin", 699L),
+            Map.entry("Flutter Cross-Platform Apps", 699L),
+            Map.entry("Cybersecurity Fundamentals", 0L),
+            Map.entry("Ethical Hacking & Penetration Testing", 899L),
+            Map.entry("Effective Communication at Work", 0L),
+            Map.entry("Technical Interview Preparation", 799L)
     );
 
     private final UserRepository userRepository;
@@ -292,7 +317,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private Course applySeedPrice(Course course) {
         long price = seedPrice(course.getTitle());
-        if (price > 0 && course.getPrice() == 0) {
+        if (course.getPrice() != price) {
             course.setPrice(price);
             return courseRepository.save(course);
         }

@@ -2,6 +2,7 @@ package com.lms.service;
 
 import com.lms.dto.CreatePaymentOrderRequest;
 import com.lms.dto.EnrolledCourseDto;
+import com.lms.dto.PaymentDto;
 import com.lms.dto.PaymentOrderDto;
 import com.lms.dto.PaymentVerificationDto;
 import com.lms.dto.VerifyPaymentRequest;
@@ -24,6 +25,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -213,6 +215,27 @@ class PaymentServiceTest {
         verifyNoInteractions(razorpayOrderClient);
     }
 
+    @Test
+    void listsPaymentsForTheCurrentStudent() {
+        payment.setRazorpayPaymentId(PAYMENT_ID);
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setCreatedAt(LocalDateTime.now());
+        when(currentUserService.get(authentication)).thenReturn(student);
+        when(paymentRepository.findByStudentIdOrderByCreatedAtDesc(STUDENT_ID))
+                .thenReturn(List.of(payment));
+
+        List<PaymentDto> result = paymentService.getPayments(authentication);
+
+        assertThat(result).hasSize(1);
+        PaymentDto dto = result.get(0);
+        assertThat(dto.courseId()).isEqualTo(COURSE_ID);
+        assertThat(dto.courseTitle()).isEqualTo("Paid Course");
+        assertThat(dto.razorpayOrderId()).isEqualTo(ORDER_ID);
+        assertThat(dto.razorpayPaymentId()).isEqualTo(PAYMENT_ID);
+        assertThat(dto.amountPaise()).isEqualTo(49_900L);
+        assertThat(dto.status()).isEqualTo("SUCCESS");
+        assertThat(dto.createdAt()).isEqualTo(payment.getCreatedAt());
+    }
     private EnrolledCourseDto enrolledCourse() {
         return new EnrolledCourseDto(ENROLLMENT_ID, null, LocalDateTime.now(), null);
     }

@@ -2,6 +2,7 @@ package com.lms.service;
 
 import com.lms.dto.CreatePaymentOrderRequest;
 import com.lms.dto.EnrolledCourseDto;
+import com.lms.dto.PaymentDto;
 import com.lms.dto.PaymentOrderDto;
 import com.lms.dto.PaymentVerificationDto;
 import com.lms.dto.VerifyPaymentRequest;
@@ -16,6 +17,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -47,6 +49,22 @@ public class PaymentService {
         this.signatureVerifier = signatureVerifier;
     }
 
+    @Transactional(readOnly = true)
+    public List<PaymentDto> getPayments(Authentication authentication) {
+        User student = currentUserService.get(authentication);
+        return paymentRepository.findByStudentIdOrderByCreatedAtDesc(student.getId()).stream()
+                .map(payment -> new PaymentDto(
+                        payment.getId(),
+                        payment.getRazorpayOrderId(),
+                        payment.getRazorpayPaymentId(),
+                        payment.getCourse().getId(),
+                        payment.getCourse().getTitle(),
+                        payment.getAmount(),
+                        payment.getStatus().name(),
+                        payment.getCreatedAt()
+                ))
+                .toList();
+    }
     @Transactional
     public PaymentOrderDto createOrder(CreatePaymentOrderRequest request, Authentication authentication) {
         User student = currentUserService.get(authentication);

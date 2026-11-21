@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Eye, EyeOff, Image, Save, Sparkles } from 'lucide-react'
 import api, { getErrorMessage } from '../../api/client'
+import { formatPrice } from '../../api/helpers'
 import { ErrorAlert } from '../../components/Feedback'
 import { ButtonLoader, PageLoader } from '../../components/Loading'
 import PageHeader from '../../components/PageHeader'
@@ -11,6 +12,7 @@ const EMPTY_FORM = {
   description: '',
   category: '',
   imageUrl: '',
+  price: 0,
   published: true,
 }
 
@@ -35,6 +37,7 @@ export default function CourseForm() {
           description: data.description || '',
           category: data.category || '',
           imageUrl: data.imageUrl || '',
+          price: Number(data.price) || 0,
           published: data.published,
         })
       })
@@ -58,11 +61,16 @@ export default function CourseForm() {
     event.preventDefault()
     setSaving(true)
     setError('')
+    const price = Number(form.price)
+    const payload = {
+      ...form,
+      price: Number.isFinite(price) && price >= 0 ? Math.round(price) : 0,
+    }
     try {
       if (isEdit) {
-        await api.put(`/teacher/courses/${courseId}`, form)
+        await api.put(`/teacher/courses/${courseId}`, payload)
       } else {
-        await api.post('/teacher/courses', form)
+        await api.post('/teacher/courses', payload)
       }
       navigate('/teacher/courses')
     } catch (err) {
@@ -124,6 +132,32 @@ export default function CourseForm() {
               className="input"
               placeholder="e.g. Programming, Design, Business"
             />
+          </div>
+
+          <div>
+            <label className="label" htmlFor="price">
+              Price (INR)
+            </label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3.5 top-2.5 text-sm font-semibold text-slate-400">
+                ₹
+              </span>
+              <input
+                id="price"
+                name="price"
+                type="number"
+                min="0"
+                step="1"
+                required
+                value={form.price}
+                onChange={handleChange}
+                className="input pl-8"
+                placeholder="0"
+              />
+            </div>
+            <p className="mt-1.5 text-xs text-slate-400">
+              Enter 0 to make this course free. Paid courses are enrolled after checkout.
+            </p>
           </div>
 
           <div>
@@ -225,6 +259,7 @@ export default function CourseForm() {
             <h3 className="text-lg font-bold leading-snug text-slate-900">
               {form.title || 'Your course title'}
             </h3>
+            <p className="mt-1.5 text-sm font-bold text-indigo-600">{formatPrice(form.price)}</p>
             <p className="mt-2 line-clamp-4 text-sm leading-relaxed text-slate-500">
               {form.description || 'Your course description will appear here. Make it clear and inviting.'}
             </p>

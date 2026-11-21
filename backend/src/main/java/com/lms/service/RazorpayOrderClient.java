@@ -61,6 +61,10 @@ public class RazorpayOrderClient {
                     : response.get("currency").toString();
 
             return new RazorpayOrder(response.get("id").toString(), amount, currency);
+        } catch (IllegalArgumentException exception) {
+            log.warn("Razorpay credentials are invalid: {}", exception.getMessage());
+            throw ApiException.badRequest(
+                    "Razorpay credentials are invalid. Check the RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables.");
         } catch (RestClientException exception) {
             log.warn("Razorpay order creation failed: {}", exception.getMessage());
             throw ApiException.badRequest("Unable to create a Razorpay order. Please try again.");
@@ -73,14 +77,20 @@ public class RazorpayOrderClient {
     }
 
     private void requireConfigured() {
-        if (isBlank(keyId) || isBlank(keySecret)) {
+        if (isBlank(keyId) || isBlank(keySecret)
+                || containsUnresolvedPlaceholder(keyId) || containsUnresolvedPlaceholder(keySecret)
+                || keyId.contains(":")) {
             throw ApiException.badRequest(
-                    "Razorpay is not configured. Set the RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables.");
+                    "Razorpay is not configured. Set valid RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET environment variables.");
         }
     }
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private boolean containsUnresolvedPlaceholder(String value) {
+        return value.contains("${") || value.contains("}");
     }
 
     public record RazorpayOrder(String id, long amount, String currency) {

@@ -16,6 +16,7 @@ import MockTestLeaderboard from './pages/student/MockTestLeaderboard'
 import MockTestResult from './pages/student/MockTestResult'
 import MockTestStart from './pages/student/MockTestStart'
 import MyCourses from './pages/student/MyCourses'
+import MyPayments from './pages/student/MyPayments'
 import QuizPage from './pages/student/QuizPage'
 import StudentDashboard from './pages/student/StudentDashboard'
 import StudentMockTests from './pages/student/StudentMockTests'
@@ -97,6 +98,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['STUDENT']}>
               <CourseDetail />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/student/payments"
+          element={
+            <ProtectedRoute roles={['STUDENT']}>
+              <MyPayments />
             </ProtectedRoute>
           }
         />
