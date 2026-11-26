@@ -43,6 +43,7 @@ A complete Learning Management System with a Spring Boot REST API and a React fr
 
 ### Security
 - Register/login with JWT (24-hour tokens by default)
+- Reset a forgotten password with a 15-minute token link logged to the server console
 - Public registration always creates `STUDENT` accounts
 - Role-based route and API protection (`ADMIN`, `TEACHER`, `STUDENT`)
 - Passwords hashed with BCrypt

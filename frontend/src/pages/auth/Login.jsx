@@ -103,6 +103,11 @@ export default function Login() {
             </div>
           </div>
 
+          <div className="flex justify-end">
+            <Link to="/forgot-password" className="text-xs font-semibold text-indigo-600 hover:text-indigo-700">
+              Forgot password?
+            </Link>
+          </div>
           <button type="submit" disabled={loading} className="btn-primary w-full py-3">
             {loading ? <ButtonLoader label="Signing in..." /> : <>Sign in <ArrowRight className="h-4 w-4" /></>}
           </button>
@@ -117,7 +122,7 @@ export default function Login() {
 
         <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
           <p className="mb-3 text-center text-[11px] font-bold uppercase tracking-[0.14em] text-slate-400">
-            Demo accounts · click to fill
+            Demo accounts Â· click to fill
           </p>
           <div className="grid grid-cols-3 gap-2">
             {DEMO_ACCOUNTS.map((account) => (

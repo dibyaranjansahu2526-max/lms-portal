@@ -1,10 +1,14 @@
 package com.lms.controller;
 
 import com.lms.dto.AuthResponse;
+import com.lms.dto.ForgotPasswordRequest;
 import com.lms.dto.LoginRequest;
+import com.lms.dto.MessageResponse;
 import com.lms.dto.RegisterRequest;
+import com.lms.dto.ResetPasswordRequest;
 import com.lms.dto.UserDto;
 import com.lms.service.AuthService;
+import com.lms.service.PasswordResetService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,9 +24,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, PasswordResetService passwordResetService) {
         this.authService = authService;
+        this.passwordResetService = passwordResetService;
     }
 
     @PostMapping("/register")
@@ -35,6 +41,15 @@ public class AuthController {
         return authService.login(request);
     }
 
+    @PostMapping("/forgot-password")
+    public MessageResponse forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        return passwordResetService.requestPasswordReset(request);
+    }
+
+    @PostMapping("/reset-password")
+    public MessageResponse resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        return passwordResetService.resetPassword(request);
+    }
     @GetMapping("/me")
     public UserDto me(Authentication authentication) {
         return authService.me(authentication);

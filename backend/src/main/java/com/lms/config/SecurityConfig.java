@@ -73,6 +73,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
                         .requestMatchers("/api/auth/**", "/error").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/certificates/verify/**").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

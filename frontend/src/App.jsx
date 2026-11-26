@@ -6,6 +6,8 @@ import { homeForRole } from './api/helpers'
 import { useAuth } from './context/AuthContext'
 import Profile from './pages/Profile'
 import Login from './pages/auth/Login'
+import ForgotPassword from './pages/auth/ForgotPassword'
+import ResetPassword from './pages/auth/ResetPassword'
 import Register from './pages/auth/Register'
 import VerifyCertificate from './pages/public/VerifyCertificate'
 import Catalog from './pages/student/Catalog'
@@ -58,6 +60,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<HomeRedirect />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify" element={<VerifyCertificate />} />
 
