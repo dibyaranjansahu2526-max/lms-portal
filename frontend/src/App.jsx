@@ -25,6 +25,7 @@ import StudentMockTests from './pages/student/StudentMockTests'
 import Wishlist from './pages/student/Wishlist'
 import AdminCourses from './pages/admin/AdminCourses'
 import AdminDashboard from './pages/admin/AdminDashboard'
+import Coupons from './pages/admin/Coupons'
 import AdminUsers from './pages/admin/AdminUsers'
 import Revenue from './pages/admin/Revenue'
 import CourseForm from './pages/teacher/CourseForm'
@@ -281,6 +282,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['ADMIN']}>
               <Revenue />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/coupons"
+          element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <Coupons />
             </ProtectedRoute>
           }
         />

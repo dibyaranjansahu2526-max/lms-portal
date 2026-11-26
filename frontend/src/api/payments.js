@@ -44,10 +44,22 @@ export function loadRazorpayCheckout() {
   return checkoutScriptPromise
 }
 
-export async function buyCourse(course, user) {
+export async function buyCourse(course, user, couponCode) {
   const { data: order } = await api.post('/student/payments/create-order', {
     courseId: course.id,
+    ...(couponCode ? { couponCode } : {}),
   })
+
+  if (order?.directEnrollment) {
+    const verification = {
+      status: order.status || 'SUCCESS',
+      razorpayOrderId: order.orderId,
+      razorpayPaymentId: '',
+      enrollmentId: order.enrollmentId,
+    }
+    recordPaymentReceipt(user, course, order, verification)
+    return { order, verification }
+  }
 
   if (!order?.orderId || !order?.keyId) {
     throw new Error('Checkout could not be started. Please try again.')

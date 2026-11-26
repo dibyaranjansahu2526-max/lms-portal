@@ -14,11 +14,13 @@ import {
 } from 'lucide-react'
 import api, { getErrorMessage } from '../../api/client'
 import { buyCourse } from '../../api/payments'
+import CouponField from '../../components/CouponField'
 import { ErrorAlert, SuccessAlert } from '../../components/Feedback'
 import { ButtonLoader, PageLoader } from '../../components/Loading'
 import ProgressBar from '../../components/ProgressBar'
 import RatingStars from '../../components/RatingStars'
-import { formatDate, formatPrice, initials } from '../../api/helpers'
+import { useCoupon } from '../../hooks/useCoupon'
+import { formatCurrency, formatDate, formatPrice, initials } from '../../api/helpers'
 import { useAuth } from '../../context/AuthContext'
 
 export default function CourseDetail() {
@@ -78,6 +80,7 @@ export default function CourseDetail() {
   const reviewCount = reviews?.reviewCount ?? course?.reviewCount ?? 0
   const price = Number(course?.price) || 0
   const paid = price > 0
+  const coupon = useCoupon(courseId, price)
 
   const handleEnroll = async () => {
     setEnrolling(true)
@@ -97,12 +100,12 @@ export default function CourseDetail() {
     }
   }
 
-  const handleBuy = async () => {
+  const handleBuy = async (couponCode) => {
     setPurchasing(true)
     setError('')
     setSuccess('')
     try {
-      const { verification } = await buyCourse(course, user)
+      const { verification } = await buyCourse(course, user, couponCode)
       setEnrollments((current) => {
         if (current.some((item) => item.course.id === course.id)) return current
         return [
@@ -255,7 +258,14 @@ export default function CourseDetail() {
                   paid ? 'text-slate-900 dark:text-slate-100' : 'text-emerald-600 dark:text-emerald-400'
                 }`}
               >
-                {formatPrice(price)}
+                {paid && coupon.applied && coupon.finalPrice !== price ? (
+                  <span className="flex flex-wrap items-baseline gap-2">
+                    <span className="text-base font-medium text-slate-400 line-through">{formatPrice(price)}</span>
+                    <span>{formatCurrency(coupon.finalPrice)}</span>
+                  </span>
+                ) : (
+                  formatPrice(price)
+                )}
               </p>
               <p className="pb-1 text-xs font-medium text-slate-400">
                 {paid ? 'One-time payment Â· lifetime access' : 'Free course'}
@@ -289,18 +299,25 @@ export default function CourseDetail() {
             <ErrorAlert message={error} className="mt-5" />
             <SuccessAlert message={success} className="mt-5" />
 
+            {paid && !enrolled && <CouponField coupon={coupon} disabled={purchasing} />}
+
             <div className="mt-5 flex flex-col gap-2 sm:flex-row">
               {enrolled ? (
                 <Link to={`/student/courses/${course.id}/learn`} className="btn-primary">
                   <PlayCircle className="h-4 w-4" /> Continue learning
                 </Link>
               ) : paid ? (
-                <button type="button" onClick={handleBuy} disabled={purchasing} className="btn-primary">
+                <button
+                  type="button"
+                  onClick={() => handleBuy(coupon.applied?.code)}
+                  disabled={purchasing}
+                  className="btn-primary"
+                >
                   {purchasing ? (
                     <ButtonLoader label="Opening checkout..." />
                   ) : (
                     <>
-                      <CreditCard className="h-4 w-4" /> Buy now
+                      <CreditCard className="h-4 w-4" /> {coupon.applied?.free ? 'Enroll free' : 'Buy now'}
                     </>
                   )}
                 </button>

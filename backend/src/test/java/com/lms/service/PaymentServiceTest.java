@@ -1,5 +1,6 @@
 package com.lms.service;
 
+import com.lms.dto.CouponValidationDto;
 import com.lms.dto.CreatePaymentOrderRequest;
 import com.lms.dto.EnrolledCourseDto;
 import com.lms.dto.PaymentDto;
@@ -14,6 +15,8 @@ import com.lms.entity.User;
 import com.lms.exception.ApiException;
 import com.lms.repository.EnrollmentRepository;
 import com.lms.repository.PaymentRepository;
+import com.lowagie.text.pdf.PdfReader;
+import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,6 +76,9 @@ class PaymentServiceTest {
     private RazorpaySignatureVerifier signatureVerifier;
 
     @Mock
+    private CouponService couponService;
+
+    @Mock
     private Authentication authentication;
 
     @InjectMocks
@@ -116,7 +122,7 @@ class PaymentServiceTest {
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         PaymentOrderDto result = paymentService.createOrder(
-                new CreatePaymentOrderRequest(COURSE_ID), authentication);
+                new CreatePaymentOrderRequest(COURSE_ID, null), authentication);
 
         assertThat(result.orderId()).isEqualTo(ORDER_ID);
         assertThat(result.amount()).isEqualTo(49_900L);
@@ -195,7 +201,7 @@ class PaymentServiceTest {
         when(courseService.findCourse(COURSE_ID)).thenReturn(course);
 
         assertThatThrownBy(() -> paymentService.createOrder(
-                new CreatePaymentOrderRequest(COURSE_ID), authentication))
+                new CreatePaymentOrderRequest(COURSE_ID, null), authentication))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("This course is free. Use the enroll endpoint to join it.");
 
@@ -209,7 +215,7 @@ class PaymentServiceTest {
         when(enrollmentRepository.existsByStudentIdAndCourseId(STUDENT_ID, COURSE_ID)).thenReturn(true);
 
         assertThatThrownBy(() -> paymentService.createOrder(
-                new CreatePaymentOrderRequest(COURSE_ID), authentication))
+                new CreatePaymentOrderRequest(COURSE_ID, null), authentication))
                 .isInstanceOf(ApiException.class)
                 .hasMessage("You are already enrolled in this course");
 
@@ -252,6 +258,27 @@ class PaymentServiceTest {
     }
 
     @Test
+    void receiptIncludesCouponAndDiscount() throws Exception {
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setRazorpayPaymentId(PAYMENT_ID);
+        payment.setCreatedAt(LocalDateTime.now());
+        payment.setCouponCode("SAVE10");
+        payment.setOriginalAmountPaise(49_900L);
+        payment.setDiscountPaise(4_990L);
+        payment.setAmount(44_910L);
+        when(currentUserService.get(authentication)).thenReturn(student);
+        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+
+        PaymentService.PaymentPdf result = paymentService.generateReceipt(1L, authentication);
+
+        String text = extractPdfText(result.bytes());
+        assertThat(text).contains("SAVE10");
+        assertThat(text).contains("Discount");
+        assertThat(text).contains("Amount paid");
+        assertThat(text).contains("INR 449");
+    }
+
+    @Test
     void refusesReceiptForAnotherStudentsPayment() {
         User other = new User();
         other.setId(99L);
@@ -273,6 +300,99 @@ class PaymentServiceTest {
                 .isInstanceOf(ApiException.class)
                 .hasMessage("Receipt is available for successful payments only");
     }
+    @Test
+    void appliesCouponDiscountServerSideWhenCreatingAnOrder() {
+        when(currentUserService.get(authentication)).thenReturn(student);
+        when(courseService.findCourse(COURSE_ID)).thenReturn(course);
+        when(enrollmentRepository.existsByStudentIdAndCourseId(STUDENT_ID, COURSE_ID)).thenReturn(false);
+        when(couponService.validate(course, STUDENT_ID, "save10"))
+                .thenReturn(new CouponValidationDto("SAVE10", 10, 49_900L, 4_990L, 44_910L, false));
+        when(razorpayOrderClient.createOrder(eq(44_910L), anyString()))
+                .thenReturn(new RazorpayOrderClient.RazorpayOrder(ORDER_ID, 44_910L, "INR"));
+        when(razorpayOrderClient.getKeyId()).thenReturn("generated-key-" + UUID.randomUUID());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PaymentOrderDto result = paymentService.createOrder(
+                new CreatePaymentOrderRequest(COURSE_ID, "save10"), authentication);
+
+        assertThat(result.amount()).isEqualTo(44_910L);
+        assertThat(result.couponCode()).isEqualTo("SAVE10");
+        assertThat(result.discountPaise()).isEqualTo(4_990L);
+        verify(razorpayOrderClient).createOrder(eq(44_910L), anyString());
+        verify(couponService, never()).consumeOnce(any(), anyString());
+
+        ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(captor.capture());
+        Payment saved = captor.getValue();
+        assertThat(saved.getAmount()).isEqualTo(44_910L);
+        assertThat(saved.getOriginalAmountPaise()).isEqualTo(49_900L);
+        assertThat(saved.getDiscountPaise()).isEqualTo(4_990L);
+        assertThat(saved.getCouponCode()).isEqualTo("SAVE10");
+    }
+
+    @Test
+    void enrollsDirectlyWhenCouponMakesTheCourseFree() {
+        when(currentUserService.get(authentication)).thenReturn(student);
+        when(courseService.findCourse(COURSE_ID)).thenReturn(course);
+        when(enrollmentRepository.existsByStudentIdAndCourseId(STUDENT_ID, COURSE_ID)).thenReturn(false);
+        when(couponService.validate(course, STUDENT_ID, "free100"))
+                .thenReturn(new CouponValidationDto("FREE100", 100, 49_900L, 49_900L, 0L, true));
+        when(enrollmentService.enrollAfterPayment(course, student)).thenReturn(enrolledCourse());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> {
+            Payment saved = invocation.getArgument(0);
+            saved.setId(7L);
+            return saved;
+        });
+
+        PaymentOrderDto result = paymentService.createOrder(
+                new CreatePaymentOrderRequest(COURSE_ID, "free100"), authentication);
+
+        assertThat(result.directEnrollment()).isTrue();
+        assertThat(result.enrollmentId()).isEqualTo(ENROLLMENT_ID);
+        assertThat(result.amount()).isZero();
+        assertThat(result.keyId()).isEmpty();
+        verifyNoInteractions(razorpayOrderClient);
+        verify(enrollmentService).enrollAfterPayment(course, student);
+        verify(couponService).consumeOnce(7L, "FREE100");
+
+        ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(captor.capture());
+        Payment saved = captor.getValue();
+        assertThat(saved.getStatus()).isEqualTo(PaymentStatus.SUCCESS);
+        assertThat(saved.getAmount()).isZero();
+        assertThat(saved.getCouponCode()).isEqualTo("FREE100");
+        assertThat(saved.getDiscountPaise()).isEqualTo(49_900L);
+    }
+
+    @Test
+    void countsCouponUsageOnlyOnceWhenVerificationIsRetried() {
+        payment.setCouponCode("SAVE10");
+        when(currentUserService.get(authentication)).thenReturn(student);
+        when(paymentRepository.findByRazorpayOrderId(ORDER_ID)).thenReturn(Optional.of(payment));
+        when(signatureVerifier.isValid(ORDER_ID, PAYMENT_ID, SIGNATURE)).thenReturn(true);
+        when(paymentRepository.save(payment)).thenReturn(payment);
+        when(enrollmentService.enrollAfterPayment(course, student)).thenReturn(enrolledCourse());
+
+        paymentService.verifyPayment(new VerifyPaymentRequest(ORDER_ID, PAYMENT_ID, SIGNATURE), authentication);
+        paymentService.verifyPayment(new VerifyPaymentRequest(ORDER_ID, PAYMENT_ID, SIGNATURE), authentication);
+
+        verify(couponService, times(1)).consumeOnce(1L, "SAVE10");
+    }
+
+    private String extractPdfText(byte[] bytes) throws Exception {
+        PdfReader reader = new PdfReader(bytes);
+        try {
+            StringBuilder text = new StringBuilder();
+            PdfTextExtractor extractor = new PdfTextExtractor(reader);
+            for (int page = 1; page <= reader.getNumberOfPages(); page++) {
+                text.append(extractor.getTextFromPage(page));
+            }
+            return text.toString();
+        } finally {
+            reader.close();
+        }
+    }
+
     private EnrolledCourseDto enrolledCourse() {
         return new EnrolledCourseDto(ENROLLMENT_ID, null, LocalDateTime.now(), null);
     }

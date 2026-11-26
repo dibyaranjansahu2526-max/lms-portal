@@ -10,6 +10,9 @@ public record PaymentDto(
         String courseTitle,
         long amountPaise,
         String status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String couponCode,
+        long originalAmountPaise,
+        long discountPaise
 ) {
 }

@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotNull;
 public record CreatePaymentOrderRequest(
         @JsonAlias("course_id")
         @NotNull(message = "Course id is required")
-        Long courseId
+        Long courseId,
+
+        @JsonAlias({"couponCode", "coupon_code"})
+        String couponCode
 ) {
 }

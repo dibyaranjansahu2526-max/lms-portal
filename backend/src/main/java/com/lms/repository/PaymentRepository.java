@@ -16,6 +16,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     List<Payment> findByStudentIdOrderByCreatedAtDesc(Long studentId);
 
     @Modifying
+    @Query("""
+            update Payment p
+            set p.couponUsageRecorded = true
+            where p.id = :paymentId and p.couponUsageRecorded = false
+            """)
+    int markCouponUsageRecorded(@Param("paymentId") Long paymentId);
+
+    @Modifying
     @Query("delete from Payment p where p.course.id = :courseId")
     void deleteByCourseId(@Param("courseId") Long courseId);
 

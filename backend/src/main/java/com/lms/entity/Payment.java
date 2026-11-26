@@ -13,6 +13,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.time.LocalDateTime;
 
@@ -42,6 +43,21 @@ public class Payment {
 
     @Column(nullable = false)
     private long amount;
+
+    @Column(name = "coupon_code", length = 40)
+    private String couponCode;
+
+    @ColumnDefault("0")
+    @Column(name = "original_amount_paise", nullable = false)
+    private long originalAmountPaise = 0L;
+
+    @ColumnDefault("0")
+    @Column(name = "discount_paise", nullable = false)
+    private long discountPaise = 0L;
+
+    @ColumnDefault("FALSE")
+    @Column(name = "coupon_usage_recorded", nullable = false)
+    private boolean couponUsageRecorded = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -106,6 +122,38 @@ public class Payment {
 
     public void setAmount(long amount) {
         this.amount = amount;
+    }
+
+    public String getCouponCode() {
+        return couponCode;
+    }
+
+    public void setCouponCode(String couponCode) {
+        this.couponCode = couponCode;
+    }
+
+    public long getOriginalAmountPaise() {
+        return originalAmountPaise;
+    }
+
+    public void setOriginalAmountPaise(long originalAmountPaise) {
+        this.originalAmountPaise = originalAmountPaise;
+    }
+
+    public long getDiscountPaise() {
+        return discountPaise;
+    }
+
+    public void setDiscountPaise(long discountPaise) {
+        this.discountPaise = discountPaise;
+    }
+
+    public boolean isCouponUsageRecorded() {
+        return couponUsageRecorded;
+    }
+
+    public void setCouponUsageRecorded(boolean couponUsageRecorded) {
+        this.couponUsageRecorded = couponUsageRecorded;
     }
 
     public PaymentStatus getStatus() {

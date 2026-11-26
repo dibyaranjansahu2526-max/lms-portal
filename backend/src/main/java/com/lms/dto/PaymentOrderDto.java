@@ -4,6 +4,13 @@ public record PaymentOrderDto(
         String orderId,
         long amount,
         String currency,
-        String keyId
+        String keyId,
+        boolean directEnrollment,
+        Long enrollmentId,
+        String couponCode,
+        Integer discountPercent,
+        long originalAmountPaise,
+        long discountPaise,
+        long finalAmountPaise
 ) {
 }

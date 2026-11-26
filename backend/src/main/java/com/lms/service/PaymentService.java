@@ -1,6 +1,7 @@
 package com.lms.service;
 
 import com.lms.dto.CreatePaymentOrderRequest;
+import com.lms.dto.CouponValidationDto;
 import com.lms.dto.EnrolledCourseDto;
 import com.lms.dto.PaymentDto;
 import com.lms.dto.PaymentOrderDto;
@@ -49,6 +50,7 @@ public class PaymentService {
     private final EnrollmentService enrollmentService;
     private final CourseService courseService;
     private final CurrentUserService currentUserService;
+    private final CouponService couponService;
     private final RazorpayOrderClient razorpayOrderClient;
     private final RazorpaySignatureVerifier signatureVerifier;
 
@@ -57,6 +59,7 @@ public class PaymentService {
                           EnrollmentService enrollmentService,
                           CourseService courseService,
                           CurrentUserService currentUserService,
+                          CouponService couponService,
                           RazorpayOrderClient razorpayOrderClient,
                           RazorpaySignatureVerifier signatureVerifier) {
         this.paymentRepository = paymentRepository;
@@ -64,6 +67,7 @@ public class PaymentService {
         this.enrollmentService = enrollmentService;
         this.courseService = courseService;
         this.currentUserService = currentUserService;
+        this.couponService = couponService;
         this.razorpayOrderClient = razorpayOrderClient;
         this.signatureVerifier = signatureVerifier;
     }
@@ -80,7 +84,10 @@ public class PaymentService {
                         payment.getCourse().getTitle(),
                         payment.getAmount(),
                         payment.getStatus().name(),
-                        payment.getCreatedAt()
+                        payment.getCreatedAt(),
+                        payment.getCouponCode(),
+                        payment.getOriginalAmountPaise(),
+                        payment.getDiscountPaise()
                 ))
                 .toList();
     }
@@ -115,16 +122,27 @@ public class PaymentService {
             throw ApiException.conflict("You are already enrolled in this course");
         }
 
-        long amountInPaise = toPaise(course.getPrice());
+        CouponValidationDto appliedCoupon = request.couponCode() == null || request.couponCode().isBlank()
+                ? null
+                : couponService.validate(course, student.getId(), request.couponCode());
+        long finalAmountPaise = appliedCoupon == null ? toPaise(course.getPrice()) : appliedCoupon.finalPricePaise();
+
+        if (finalAmountPaise == 0) {
+            return enrollDirectly(student, course, appliedCoupon);
+        }
+
         String receipt = "course-" + course.getId() + "-"
                 + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
-        RazorpayOrderClient.RazorpayOrder order = razorpayOrderClient.createOrder(amountInPaise, receipt);
+        RazorpayOrderClient.RazorpayOrder order = razorpayOrderClient.createOrder(finalAmountPaise, receipt);
 
         Payment payment = new Payment();
         payment.setStudent(student);
         payment.setCourse(course);
         payment.setRazorpayOrderId(order.id());
         payment.setAmount(order.amount());
+        payment.setOriginalAmountPaise(appliedCoupon == null ? finalAmountPaise : appliedCoupon.originalPricePaise());
+        payment.setDiscountPaise(appliedCoupon == null ? 0L : appliedCoupon.discountPaise());
+        payment.setCouponCode(appliedCoupon == null ? null : appliedCoupon.code());
         payment.setStatus(PaymentStatus.CREATED);
         paymentRepository.save(payment);
 
@@ -132,7 +150,45 @@ public class PaymentService {
                 order.id(),
                 order.amount(),
                 order.currency(),
-                razorpayOrderClient.getKeyId()
+                razorpayOrderClient.getKeyId(),
+                false,
+                null,
+                payment.getCouponCode(),
+                appliedCoupon == null ? null : appliedCoupon.discountPercent(),
+                payment.getOriginalAmountPaise(),
+                payment.getDiscountPaise(),
+                order.amount()
+        );
+    }
+
+    private PaymentOrderDto enrollDirectly(User student, Course course, CouponValidationDto appliedCoupon) {
+        EnrolledCourseDto enrollment = enrollmentService.enrollAfterPayment(course, student);
+
+        Payment payment = new Payment();
+        payment.setStudent(student);
+        payment.setCourse(course);
+        payment.setRazorpayOrderId("direct-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16));
+        payment.setAmount(0L);
+        payment.setOriginalAmountPaise(appliedCoupon.originalPricePaise());
+        payment.setDiscountPaise(appliedCoupon.discountPaise());
+        payment.setCouponCode(appliedCoupon.code());
+        payment.setStatus(PaymentStatus.SUCCESS);
+        Payment saved = paymentRepository.save(payment);
+
+        couponService.consumeOnce(saved.getId(), appliedCoupon.code());
+
+        return new PaymentOrderDto(
+                saved.getRazorpayOrderId(),
+                0L,
+                "INR",
+                "",
+                true,
+                enrollment.enrollmentId(),
+                appliedCoupon.code(),
+                appliedCoupon.discountPercent(),
+                appliedCoupon.originalPricePaise(),
+                appliedCoupon.discountPaise(),
+                0L
         );
     }
 
@@ -163,7 +219,10 @@ public class PaymentService {
         if (payment.getStatus() != PaymentStatus.SUCCESS) {
             payment.setStatus(PaymentStatus.SUCCESS);
             payment.setRazorpayPaymentId(request.razorpayPaymentId());
-            paymentRepository.save(payment);
+            Payment saved = paymentRepository.save(payment);
+            if (payment.getCouponCode() != null) {
+                couponService.consumeOnce(saved.getId(), payment.getCouponCode());
+            }
         }
 
         EnrolledCourseDto enrollment = enrollmentService.enrollAfterPayment(payment.getCourse(), student);
@@ -209,7 +268,12 @@ public class PaymentService {
             addReceiptRow(details, "Student", student.getName());
             addReceiptRow(details, "Email", student.getEmail());
             addReceiptRow(details, "Course", payment.getCourse().getTitle());
-            addReceiptRow(details, "Amount", "INR " + String.format(Locale.ROOT, "%,d", payment.getAmount() / PAISE_PER_RUPEE));
+            if (payment.getCouponCode() != null && !payment.getCouponCode().isBlank()) {
+                addReceiptRow(details, "Coupon", payment.getCouponCode());
+                addReceiptRow(details, "Original amount", formatRupees(payment.getOriginalAmountPaise()));
+                addReceiptRow(details, "Discount", "- " + formatRupees(payment.getDiscountPaise()));
+            }
+            addReceiptRow(details, "Amount paid", formatRupees(payment.getAmount()));
             addReceiptRow(details, "Status", payment.getStatus().name());
             addReceiptRow(details, "Date", payment.getCreatedAt() == null
                     ? "N/A" : payment.getCreatedAt().format(DateTimeFormatter.ofPattern("dd MMMM yyyy, HH:mm")));
@@ -243,6 +307,10 @@ public class PaymentService {
 
     public record PaymentPdf(byte[] bytes, String filename) {
     }
+    private static String formatRupees(long amountPaise) {
+        return "INR " + String.format(Locale.ROOT, "%,d", amountPaise / PAISE_PER_RUPEE);
+    }
+
     private long toPaise(long price) {
         try {
             return Math.multiplyExact(price, PAISE_PER_RUPEE);

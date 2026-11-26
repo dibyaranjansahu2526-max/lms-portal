@@ -1,6 +1,8 @@
 import { BookOpen, CheckCircle2, ClipboardList, CreditCard, Heart, Star, Users } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { formatPrice } from '../api/helpers'
+import { formatCurrency, formatPrice } from '../api/helpers'
+import { useCoupon } from '../hooks/useCoupon'
+import CouponField from './CouponField'
 import { ButtonLoader } from './Loading'
 
 export default function CourseCard({
@@ -20,10 +22,14 @@ export default function CourseCard({
   const price = Number(course.price) || 0
   const paid = price > 0
   const busy = enrolled || enrolling || purchasing
+  const coupon = useCoupon(course.id, price)
 
   const handleAction = () => {
-    const action = paid ? onBuy : onEnroll
-    action?.(course)
+    if (paid) {
+      onBuy?.(course, coupon.applied?.code)
+    } else {
+      onEnroll?.(course)
+    }
   }
 
   return (
@@ -88,7 +94,14 @@ export default function CourseCard({
               paid ? 'text-slate-900 dark:text-slate-100' : 'text-emerald-600 dark:text-emerald-400'
             }`}
           >
-            {formatPrice(price)}
+            {paid && coupon.applied && coupon.finalPrice !== price ? (
+              <span className="flex items-baseline gap-2">
+                <span className="text-sm font-medium text-slate-400 line-through">{formatPrice(price)}</span>
+                <span>{formatCurrency(coupon.finalPrice)}</span>
+              </span>
+            ) : (
+              formatPrice(price)
+            )}
           </span>
           <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
             {paid ? 'One-time payment' : 'Free access'}
@@ -110,6 +123,8 @@ export default function CourseCard({
           </span>
         </div>
 
+        {paid && !enrolled && onBuy && <CouponField coupon={coupon} compact disabled={busy} />}
+
         <button
           type="button"
           disabled={busy}
@@ -126,7 +141,7 @@ export default function CourseCard({
             <ButtonLoader label="Enrolling..." />
           ) : paid ? (
             <>
-              <CreditCard className="h-4 w-4" /> Buy now
+              <CreditCard className="h-4 w-4" /> {coupon.applied?.free ? 'Enroll free' : 'Buy now'}
             </>
           ) : (
             'Enroll now'

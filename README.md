@@ -19,6 +19,7 @@ A complete Learning Management System with a Spring Boot REST API and a React fr
 - View and delete users
 - View and delete courses
 - Review platform revenue: totals, successful payments, per-course revenue, a 30-day chart and recent payments
+- Create, activate, deactivate and delete coupon codes from the admin Coupons page
 
 ### Teacher
 - Create, edit, publish/unpublish and delete their own courses, including setting a price (0 = free)
@@ -34,6 +35,7 @@ A complete Learning Management System with a Spring Boot REST API and a React fr
 - Save courses to a wishlist with the heart button on any course card
 - Enroll in courses (free) or buy paid courses with Razorpay checkout, then view them under **My Courses**
 - Review all paid orders under **My Payments** and download a PDF receipt for successful payments
+- Apply coupon codes at checkout; discounts are recalculated on the server and shown on receipts
 - Read lessons, watch embedded YouTube videos, open lesson materials
 - Mark lessons complete and track progress
 - Take quizzes scored on the server (correct answers are never sent to the browser)

@@ -13,6 +13,7 @@ import {
   LibraryBig,
   LogOut,
   Menu,
+  Tag,
   UserRound,
   Users,
   X,
@@ -41,6 +42,7 @@ const NAV_LINKS = {
     { to: '/admin/users', label: 'Users', icon: Users },
     { to: '/admin/courses', label: 'Courses', icon: BookOpen },
     { to: '/admin/revenue', label: 'Revenue', icon: CreditCard },
+    { to: '/admin/coupons', label: 'Coupons', icon: Tag },
   ],
 }
 

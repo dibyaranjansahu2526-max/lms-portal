@@ -107,9 +107,21 @@ export default function MyPayments() {
                     Order {payment.razorpayOrderId}
                   </p>
                 </div>
-                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                  {formatCurrency(Number(payment.amountPaise || 0) / 100)}
-                </p>
+                <div>
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                    {formatCurrency(Number(payment.amountPaise || 0) / 100)}
+                  </p>
+                  {Number(payment.discountPaise || 0) > 0 && (
+                    <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-400">
+                      <span className="line-through">
+                        {formatCurrency(Number(payment.originalAmountPaise || 0) / 100)}
+                      </span>
+                      <span className="badge bg-emerald-50 text-emerald-700">
+                        {payment.couponCode || 'Coupon'} · {formatCurrency(Number(payment.discountPaise) / 100)} off
+                      </span>
+                    </p>
+                  )}
+                </div>
                 <div>
                   <span
                     className={`badge ${STATUS_STYLES[payment.status] || STATUS_STYLES.CREATED}`}

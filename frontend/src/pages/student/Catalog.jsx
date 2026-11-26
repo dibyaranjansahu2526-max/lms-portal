@@ -134,12 +134,12 @@ export default function Catalog() {
     }
   }
 
-  const handleBuy = async (course) => {
+  const handleBuy = async (course, couponCode) => {
     setPurchasingId(course.id)
     setError('')
     setSuccess('')
     try {
-      await buyCourse(course, user)
+      await buyCourse(course, user, couponCode)
       setEnrolledIds((current) => new Set([...current, course.id]))
       setCourses((current) =>
         current.map((item) =>
