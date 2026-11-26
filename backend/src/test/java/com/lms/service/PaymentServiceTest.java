@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -235,6 +236,42 @@ class PaymentServiceTest {
         assertThat(dto.amountPaise()).isEqualTo(49_900L);
         assertThat(dto.status()).isEqualTo("SUCCESS");
         assertThat(dto.createdAt()).isEqualTo(payment.getCreatedAt());
+    }
+    @Test
+    void generatesReceiptForOwnSuccessfulPayment() {
+        payment.setStatus(PaymentStatus.SUCCESS);
+        payment.setRazorpayPaymentId(PAYMENT_ID);
+        payment.setCreatedAt(LocalDateTime.now());
+        when(currentUserService.get(authentication)).thenReturn(student);
+        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+
+        PaymentService.PaymentPdf result = paymentService.generateReceipt(1L, authentication);
+
+        assertThat(result.filename()).isEqualTo("LMS-Receipt-1.pdf");
+        assertThat(new String(result.bytes(), 0, 4, StandardCharsets.US_ASCII)).isEqualTo("%PDF");
+    }
+
+    @Test
+    void refusesReceiptForAnotherStudentsPayment() {
+        User other = new User();
+        other.setId(99L);
+        payment.setStudent(other);
+        when(currentUserService.get(authentication)).thenReturn(student);
+        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.generateReceipt(1L, authentication))
+                .isInstanceOf(ApiException.class)
+                .hasMessage("You can only download receipts for your own payments");
+    }
+
+    @Test
+    void refusesReceiptForUnsuccessfulPayment() {
+        when(currentUserService.get(authentication)).thenReturn(student);
+        when(paymentRepository.findById(1L)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.generateReceipt(1L, authentication))
+                .isInstanceOf(ApiException.class)
+                .hasMessage("Receipt is available for successful payments only");
     }
     private EnrolledCourseDto enrolledCourse() {
         return new EnrolledCourseDto(ENROLLMENT_ID, null, LocalDateTime.now(), null);

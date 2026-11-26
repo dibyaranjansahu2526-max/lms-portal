@@ -53,4 +53,17 @@ export async function downloadCertificate(courseId, filename) {
   window.URL.revokeObjectURL(url)
 }
 
+export async function downloadPaymentReceipt(paymentId, filename) {
+  const response = await api.get(`/student/payments/${paymentId}/receipt`, {
+    responseType: 'blob',
+  })
+  const url = window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }))
+  const link = document.createElement('a')
+  link.href = url
+  link.setAttribute('download', filename || `LMS-Receipt-${paymentId}.pdf`)
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.URL.revokeObjectURL(url)
+}
 export default api

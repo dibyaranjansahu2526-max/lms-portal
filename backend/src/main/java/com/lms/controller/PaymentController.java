@@ -7,9 +7,14 @@ import com.lms.dto.PaymentVerificationDto;
 import com.lms.dto.VerifyPaymentRequest;
 import com.lms.service.PaymentService;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,6 +38,15 @@ public class PaymentController {
         return paymentService.getPayments(authentication);
     }
 
+    @GetMapping("/{paymentId}/receipt")
+    public ResponseEntity<byte[]> receipt(@PathVariable Long paymentId, Authentication authentication) {
+        PaymentService.PaymentPdf receipt = paymentService.generateReceipt(paymentId, authentication);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(ContentDisposition.attachment().filename(receipt.filename()).build());
+        headers.setContentLength(receipt.bytes().length);
+        return ResponseEntity.ok().headers(headers).body(receipt.bytes());
+    }
     @PostMapping("/create-order")
     public PaymentOrderDto createOrder(@Valid @RequestBody CreatePaymentOrderRequest request,
                                        Authentication authentication) {

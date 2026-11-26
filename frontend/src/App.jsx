@@ -24,6 +24,7 @@ import Wishlist from './pages/student/Wishlist'
 import AdminCourses from './pages/admin/AdminCourses'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
+import Revenue from './pages/admin/Revenue'
 import CourseForm from './pages/teacher/CourseForm'
 import LessonManager from './pages/teacher/LessonManager'
 import QuizBuilder from './pages/teacher/QuizBuilder'
@@ -268,6 +269,14 @@ export default function App() {
           element={
             <ProtectedRoute roles={['ADMIN']}>
               <AdminCourses />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/revenue"
+          element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <Revenue />
             </ProtectedRoute>
           }
         />

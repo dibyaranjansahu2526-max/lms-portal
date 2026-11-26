@@ -40,6 +40,7 @@ const NAV_LINKS = {
     { to: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/admin/users', label: 'Users', icon: Users },
     { to: '/admin/courses', label: 'Courses', icon: BookOpen },
+    { to: '/admin/revenue', label: 'Revenue', icon: CreditCard },
   ],
 }
 

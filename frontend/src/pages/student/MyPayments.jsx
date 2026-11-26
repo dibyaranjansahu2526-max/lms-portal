@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { CreditCard, ExternalLink, Receipt } from 'lucide-react'
-import api, { getErrorMessage } from '../../api/client'
+import { CreditCard, Download, ExternalLink, Receipt } from 'lucide-react'
+import api, { downloadPaymentReceipt, getErrorMessage } from '../../api/client'
 import { formatCurrency, formatDateTime } from '../../api/helpers'
 import { EmptyState, ErrorAlert } from '../../components/Feedback'
 import { PageLoader } from '../../components/Loading'
@@ -17,6 +17,7 @@ export default function MyPayments() {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [downloadingId, setDownloadingId] = useState(null)
 
   const loadPayments = () => {
     let active = true
@@ -38,6 +39,18 @@ export default function MyPayments() {
     }
   }
 
+  const handleDownload = async (payment) => {
+    if (payment.status !== 'SUCCESS' || !payment.id) return
+    setDownloadingId(payment.id)
+    setError('')
+    try {
+      await downloadPaymentReceipt(payment.id)
+    } catch (err) {
+      setError(getErrorMessage(err, 'Could not download this receipt.'))
+    } finally {
+      setDownloadingId(null)
+    }
+  }
   useEffect(loadPayments, [])
 
   return (
@@ -123,6 +136,18 @@ export default function MyPayments() {
                   >
                     <ExternalLink className="h-4 w-4" />
                   </Link>
+                  {payment.status === 'SUCCESS' && payment.id && (
+                    <button
+                      type="button"
+                      onClick={() => handleDownload(payment)}
+                      disabled={downloadingId === payment.id}
+                      className="shrink-0 text-slate-400 transition hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label={`Download receipt for ${payment.courseTitle || 'course'}`}
+                      title="Download PDF receipt"
+                    >
+                      <Download className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </li>
             ))}
